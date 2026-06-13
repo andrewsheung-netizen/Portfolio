@@ -94,6 +94,8 @@ export interface Mortgage {
   balanceOverrideAt?: number
   /** monthly payments remaining at the basis date (12 = one year, 360 = 30 years) */
   paymentsLeft?: number
+  /** total payments over the full term (e.g. 360 for a 30-year loan) — the progress denominator */
+  totalPayments?: number
   /** legacy amortization inputs — optional; kept for older data, no longer entered */
   annualRate?: number
   monthlyPayment?: number

@@ -1407,6 +1407,7 @@ function PropertyForm({ row, done }: { row?: Property; done: DoneFn }) {
   const [principal, setPrincipal] = useState('')
   const [currentBalance, setCurrentBalance] = useState('')
   const [paymentsLeft, setPaymentsLeft] = useState('')
+  const [totalPayments, setTotalPayments] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -1426,6 +1427,7 @@ function PropertyForm({ row, done }: { row?: Property; done: DoneFn }) {
           const left =
             m.paymentsLeft ?? (m.termMonths !== undefined ? Math.max(0, m.termMonths - paymentsElapsed(m)) : undefined)
           setPaymentsLeft(left !== undefined ? String(left) : '')
+          setTotalPayments(String(m.totalPayments ?? m.termMonths ?? ''))
         })
     }
     return () => {
@@ -1434,8 +1436,8 @@ function PropertyForm({ row, done }: { row?: Property; done: DoneFn }) {
   }, [row?.id])
 
   const mortgageValid = useMemo(
-    () => !withMortgage || Boolean(lender.trim() && principal && currentBalance && paymentsLeft),
-    [withMortgage, lender, principal, currentBalance, paymentsLeft],
+    () => !withMortgage || Boolean(lender.trim() && principal && currentBalance && paymentsLeft && totalPayments),
+    [withMortgage, lender, principal, currentBalance, paymentsLeft, totalPayments],
   )
 
   return (
@@ -1468,6 +1470,7 @@ function PropertyForm({ row, done }: { row?: Property; done: DoneFn }) {
               balanceOverride: num(currentBalance),
               balanceOverrideAt: Date.now(),
               paymentsLeft: Math.round(num(paymentsLeft)),
+              totalPayments: Math.round(num(totalPayments)),
               // legacy amortization fields are intentionally cleared
               annualRate: undefined,
               monthlyPayment: undefined,
@@ -1514,8 +1517,11 @@ function PropertyForm({ row, done }: { row?: Property; done: DoneFn }) {
           <Field label="Current balance" hint="what you owe now">
             <input className="input num" type="number" step="any" min="0" required value={currentBalance} onChange={(e) => setCurrentBalance(e.target.value)} />
           </Field>
-          <Field label="Payments left" hint="months remaining (1 yr = 12, 30 yr = 360)">
+          <Field label="Payments left" hint="months remaining now">
             <input className="input num" type="number" step="1" min="0" required value={paymentsLeft} onChange={(e) => setPaymentsLeft(e.target.value)} />
+          </Field>
+          <Field label="Original total payments" hint="full term (1 yr = 12, 30 yr = 360)">
+            <input className="input num" type="number" step="1" min="1" required value={totalPayments} onChange={(e) => setTotalPayments(e.target.value)} />
           </Field>
         </div>
       )}

@@ -66,6 +66,7 @@ export async function seedDemo(): Promise<boolean> {
     balanceOverride: 5_268_000,
     balanceOverrideAt: now - 90 * 86_400_000,
     paymentsLeft: 298,
+    totalPayments: 360,
   })) as number
 
   // two recent statements — HIBOR-linked, so the interest/principal split moves

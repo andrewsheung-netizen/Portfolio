@@ -48,17 +48,33 @@ export function HomePanel({ properties, mortgages, mortgagePayments, fx, onEdit,
                 const logged = m.id !== undefined ? paymentsFor(mortgagePayments, m.id) : []
                 const last = logged[0]
                 const remaining = paymentsRemaining(m, mortgagePayments)
+                const total = m.totalPayments
+                // progress = payments made of the full term, when both numbers are known
+                const made = total !== undefined && remaining !== null ? Math.max(0, total - remaining) : null
+                const pct = total && made !== null ? Math.min(100, (made / total) * 100) : null
                 const ytd = m.id !== undefined ? interestPaidInYear(mortgagePayments, m.id, thisYear) : 0
                 return (
                   <div className="home-mortgage-block" key={m.id}>
                     <div className="home-row home-mortgage">
                       <dt>
                         {m.lender} mortgage
-                        {remaining !== null && (
+                        {pct !== null && (
+                          <span className="home-progress" role="img" aria-label={`${made} of ${total} payments made`}>
+                            <span className="home-progress-fill" style={{ width: `${pct}%` }} />
+                          </span>
+                        )}
+                        {made !== null && total !== undefined ? (
                           <span className="home-progress-note num">
-                            {remaining} payment{remaining === 1 ? '' : 's'} left
+                            {made}/{total} payments
                             {last && <> · last {shortDate(last.date)}</>}
                           </span>
+                        ) : (
+                          remaining !== null && (
+                            <span className="home-progress-note num">
+                              {remaining} payment{remaining === 1 ? '' : 's'} left
+                              {last && <> · last {shortDate(last.date)}</>}
+                            </span>
+                          )
                         )}
                       </dt>
                       <dd className="num">−{money(mortgageBalance(m, mortgagePayments), m.currency).replace('−', '')}</dd>
