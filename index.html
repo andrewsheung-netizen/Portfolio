@@ -14,6 +14,19 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Portfolio" />
     <title>Portfolio</title>
+    <script>
+      // Apply the saved theme before first paint to avoid a flash.
+      (function () {
+        try {
+          if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.dataset.theme = 'light'
+            document.documentElement.style.colorScheme = 'light'
+            var m = document.querySelector('meta[name="theme-color"]')
+            if (m) m.setAttribute('content', '#eff3f5')
+          }
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

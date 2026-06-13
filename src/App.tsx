@@ -17,7 +17,8 @@ import { MortgagePaymentSheet } from './components/MortgagePayment'
 import { SettingsSheet } from './components/Settings'
 import { HelpSheet } from './components/HelpSheet'
 import { UndoToast } from './components/UndoToast'
-import { RefreshIcon, SettingsIcon, PlusIcon, HelpIcon } from './components/icons'
+import { RefreshIcon, SettingsIcon, PlusIcon, HelpIcon, SunIcon, MoonIcon } from './components/icons'
+import { applyTheme, getTheme, type Theme } from './lib/theme'
 import { asOf, todayISO } from './lib/format'
 
 export default function App() {
@@ -42,6 +43,15 @@ export default function App() {
   const [payingMortgage, setPayingMortgage] = useState<Mortgage | null>(null)
   const [view, setView] = useState<'dashboard' | 'activity' | 'summary'>('dashboard')
   const [helpOpen, setHelpOpen] = useState(false)
+  const [theme, setThemeState] = useState<Theme>(getTheme)
+
+  const toggleTheme = useCallback(() => {
+    setThemeState((t) => {
+      const next: Theme = t === 'dark' ? 'light' : 'dark'
+      applyTheme(next)
+      return next
+    })
+  }, [])
 
   const loaded =
     equities !== undefined &&
@@ -87,11 +97,14 @@ export default function App() {
       } else if (e.key === '?') {
         e.preventDefault()
         setHelpOpen(true)
+      } else if (e.key === 't') {
+        e.preventDefault()
+        toggleTheme()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [doRefresh])
+  }, [doRefresh, toggleTheme])
 
   const data = useMemo(() => {
     if (!loaded) return null
@@ -154,6 +167,14 @@ export default function App() {
             title="Refresh prices (R)"
           >
             <RefreshIcon spinning={refreshing} />
+          </button>
+          <button
+            className="iconbtn"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Light mode (T)' : 'Dark mode (T)'}
+          >
+            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </button>
           <button
             className="iconbtn"

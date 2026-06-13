@@ -80,6 +80,23 @@ export function HelpIcon({ size = 16 }: IconProps) {
   )
 }
 
+export function SunIcon({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" {...base} aria-hidden="true">
+      <circle cx="8" cy="8" r="3" />
+      <path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3.05 3.05l1.13 1.13M11.82 11.82l1.13 1.13M12.95 3.05l-1.13 1.13M4.18 11.82l-1.13 1.13" />
+    </svg>
+  )
+}
+
+export function MoonIcon({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" {...base} aria-hidden="true">
+      <path d="M13.4 9.5A5.5 5.5 0 0 1 6.5 2.6 5.5 5.5 0 1 0 13.4 9.5Z" />
+    </svg>
+  )
+}
+
 export function CloseIcon({ size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" {...base} aria-hidden="true">

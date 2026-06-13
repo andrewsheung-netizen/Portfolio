@@ -9,6 +9,7 @@ const SHORTCUTS: [string, string][] = [
   ['A', 'Add a position, cash flow, or property'],
   ['R', 'Refresh live prices'],
   ['S', 'Open settings'],
+  ['T', 'Toggle light / dark mode'],
   ['?', 'Show this help'],
   ['Esc', 'Close any open sheet'],
 ]
