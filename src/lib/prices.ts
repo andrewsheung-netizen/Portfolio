@@ -4,6 +4,30 @@ import { todayISO } from './format'
 import { BASE_CURRENCY, type Currency } from './types'
 
 const FMP = 'https://financialmodelingprep.com/api/v3'
+// Binance's public market-data host: keyless, CORS-enabled, and (unlike
+// api.binance.com) not geo-restricted.
+const BINANCE = 'https://data-api.binance.vision/api/v3'
+
+// Treated as $1 — no Binance pair to quote (USDT itself ≈ USD).
+const STABLE = new Set(['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'USD'])
+
+/**
+ * Public, keyless crypto price from Binance (quoted in USDT ≈ USD, which the app
+ * then converts to HKD via the FX rate). One request per symbol so an unlisted
+ * coin only fails itself. Returns null when the coin isn't on Binance / offline.
+ */
+async function binancePrice(symbol: string): Promise<number | null> {
+  if (STABLE.has(symbol)) return 1
+  try {
+    const res = await fetch(`${BINANCE}/ticker/price?symbol=${encodeURIComponent(symbol)}USDT`)
+    if (!res.ok) return null
+    const r = (await res.json()) as { price?: string }
+    const p = Number(r.price)
+    return Number.isFinite(p) ? p : null
+  } catch {
+    return null
+  }
+}
 
 export interface RefreshResult {
   /** count of positions/rates updated */
@@ -86,9 +110,8 @@ async function currenciesInUse(): Promise<Currency[]> {
 }
 
 /**
- * Refresh everything refreshable: equity quotes, crypto quotes, FX rates.
- * Option marks stay manual in v1 — free-tier FMP has no options chain; the
- * seam for a future provider is `refreshOptionMarks` below.
+ * Refresh everything refreshable: crypto via Binance (public, keyless), equity
+ * quotes + FX rates via FMP (needs a key). Option marks stay manual in v1.
  * Always captures a snapshot afterwards, even on partial failure.
  */
 export async function refreshAll(): Promise<RefreshResult> {
@@ -97,15 +120,31 @@ export async function refreshAll(): Promise<RefreshResult> {
   let updated = 0
   const now = Date.now()
 
-  if (key) {
-    const [equities, cryptos, ccys] = await Promise.all([
-      db.equities.toArray(),
-      db.cryptos.toArray(),
-      currenciesInUse(),
-    ])
+  // --- Crypto: Binance public feed, no key needed ---
+  const cryptos = await db.cryptos.toArray()
+  if (cryptos.length > 0) {
+    const symbols = [...new Set(cryptos.map((p) => p.symbol))]
+    const prices = new Map<string, number>()
+    await Promise.all(
+      symbols.map(async (s) => {
+        const p = await binancePrice(s)
+        if (p !== null) prices.set(s, p)
+        else failed.push(s)
+      }),
+    )
+    for (const p of cryptos) {
+      const price = prices.get(p.symbol)
+      if (price !== undefined) {
+        await db.cryptos.update(p.id!, { price, priceUpdatedAt: now, priceSource: 'live' })
+        updated++
+      }
+    }
+  }
 
+  // --- Equities + FX: FMP, needs a key ---
+  if (key) {
+    const [equities, ccys] = await Promise.all([db.equities.toArray(), currenciesInUse()])
     const equitySymbols = [...new Set(equities.map((p) => p.ticker))]
-    const cryptoSymbols = [...new Set(cryptos.map((p) => `${p.symbol}USD`))]
     const fxPairs = ccys.map((c) => `${c}${BASE_CURRENCY}`)
 
     const tryBatch = async (symbols: string[], label: string): Promise<Map<string, number>> => {
@@ -117,11 +156,7 @@ export async function refreshAll(): Promise<RefreshResult> {
       }
     }
 
-    const [eq, cr, fx] = await Promise.all([
-      tryBatch(equitySymbols, 'equities'),
-      tryBatch(cryptoSymbols, 'crypto'),
-      tryBatch(fxPairs, 'fx'),
-    ])
+    const [eq, fx] = await Promise.all([tryBatch(equitySymbols, 'equities'), tryBatch(fxPairs, 'fx')])
 
     for (const p of equities) {
       const price = eq.get(p.ticker)
@@ -130,13 +165,6 @@ export async function refreshAll(): Promise<RefreshResult> {
         updated++
       } else if (equitySymbols.includes(p.ticker) && eq.size > 0) {
         failed.push(p.ticker)
-      }
-    }
-    for (const p of cryptos) {
-      const price = cr.get(`${p.symbol}USD`)
-      if (price !== undefined) {
-        await db.cryptos.update(p.id!, { price, priceUpdatedAt: now, priceSource: 'live' })
-        updated++
       }
     }
     for (const pair of fxPairs) {

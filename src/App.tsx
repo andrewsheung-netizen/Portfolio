@@ -139,9 +139,11 @@ export default function App() {
             ? 'refreshing…'
             : !lastRefresh
               ? ''
-              : lastRefresh.noKey
-                ? 'prices manual'
-                : `as of ${asOf(lastRefresh.at)}`}
+              : lastRefresh.updated > 0
+                ? `as of ${asOf(lastRefresh.at)}`
+                : lastRefresh.noKey
+                  ? 'prices manual'
+                  : `as of ${asOf(lastRefresh.at)}`}
         </span>
         <div className="topbar-actions">
           <button

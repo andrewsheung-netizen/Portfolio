@@ -14,7 +14,10 @@ export function useAnimatedNumber(target: number, duration = 350): number {
   const rafRef = useRef(0)
 
   useEffect(() => {
-    if (firstRef.current || reduceMotion) {
+    // Snap instantly on first paint, for reduced-motion, or when the page isn't
+    // visible — rAF is throttled/paused in hidden or headless tabs, so animating
+    // there would leave the number stuck at its old value.
+    if (firstRef.current || reduceMotion || (typeof document !== 'undefined' && document.visibilityState !== 'visible')) {
       firstRef.current = false
       fromRef.current = target
       setDisplay(target)
@@ -36,7 +39,16 @@ export function useAnimatedNumber(target: number, duration = 350): number {
       }
     }
     rafRef.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(rafRef.current)
+    // Safety net: if rAF never fires (backgrounded/throttled), still land on the
+    // true value shortly after the animation window so the headline can't stick.
+    const safety = setTimeout(() => {
+      setDisplay(target)
+      fromRef.current = target
+    }, duration + 120)
+    return () => {
+      cancelAnimationFrame(rafRef.current)
+      clearTimeout(safety)
+    }
   }, [target, duration])
 
   return display

@@ -42,7 +42,9 @@
       "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost:5173/)",
       "Bash(echo \"dev 5173: HTTP $\\(curl -s -o /dev/null -w '%{http_code}' http://localhost:5173/\\)\")",
       "Bash(curl -s http://localhost:5173/)",
-      "Bash(echo \"dev index has root div: $\\(curl -s http://localhost:5173/)"
+      "Bash(echo \"dev index has root div: $\\(curl -s http://localhost:5173/)",
+      "Bash(git add *)",
+      "Bash(git -c core.autocrlf=false commit -q -m 'Crypto prices: live keyless feed from Binance \\(data-api.binance.vision\\) *)"
     ]
   }
 }
