@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-12T20:35:00+08:00",
+  "title": "Design System: Portfolio",
+  "extensions": {
+    "colorMeta": {
+      "bg": { "role": "neutral", "displayName": "Panel Teal", "canonical": "oklch(0.155 0.03 215)", "tonalRamp": ["oklch(0.155 0.03 215)", "oklch(0.19 0.035 215)", "oklch(0.225 0.04 215)", "oklch(0.27 0.042 215)", "oklch(0.38 0.04 215)", "oklch(0.55 0.035 215)", "oklch(0.75 0.025 215)", "oklch(0.94 0.012 215)"] },
+      "surface": { "role": "neutral", "displayName": "Panel Teal · raised", "canonical": "oklch(0.19 0.035 214)", "tonalRamp": ["oklch(0.15 0.03 214)", "oklch(0.19 0.035 214)", "oklch(0.24 0.04 214)", "oklch(0.3 0.042 214)", "oklch(0.4 0.04 214)", "oklch(0.55 0.035 214)", "oklch(0.75 0.025 214)", "oklch(0.93 0.012 214)"] },
+      "ink": { "role": "neutral", "displayName": "Panel Ink", "canonical": "oklch(0.94 0.012 200)", "tonalRamp": ["oklch(0.2 0.02 200)", "oklch(0.32 0.025 200)", "oklch(0.45 0.03 200)", "oklch(0.58 0.032 200)", "oklch(0.7 0.035 200)", "oklch(0.8 0.025 200)", "oklch(0.88 0.018 200)", "oklch(0.94 0.012 200)"] },
+      "muted": { "role": "neutral", "displayName": "Panel Ink · muted", "canonical": "oklch(0.7 0.035 206)", "tonalRamp": ["oklch(0.18 0.025 206)", "oklch(0.28 0.03 206)", "oklch(0.4 0.035 206)", "oklch(0.52 0.035 206)", "oklch(0.62 0.035 206)", "oklch(0.7 0.035 206)", "oklch(0.82 0.025 206)", "oklch(0.93 0.012 206)"] },
+      "cyan": { "role": "primary", "displayName": "Instrument Cyan", "canonical": "oklch(0.8 0.125 200)", "tonalRamp": ["oklch(0.15 0.04 200)", "oklch(0.25 0.07 200)", "oklch(0.35 0.09 200)", "oklch(0.45 0.11 200)", "oklch(0.55 0.12 200)", "oklch(0.68 0.125 200)", "oklch(0.8 0.125 200)", "oklch(0.92 0.06 200)"] },
+      "gain": { "role": "semantic", "displayName": "Signal Green", "canonical": "oklch(0.78 0.16 155)", "tonalRamp": ["oklch(0.15 0.05 155)", "oklch(0.25 0.08 155)", "oklch(0.36 0.11 155)", "oklch(0.47 0.13 155)", "oklch(0.58 0.15 155)", "oklch(0.68 0.16 155)", "oklch(0.78 0.16 155)", "oklch(0.92 0.07 155)"] },
+      "loss": { "role": "semantic", "displayName": "Signal Red", "canonical": "oklch(0.73 0.17 25)", "tonalRamp": ["oklch(0.15 0.05 25)", "oklch(0.25 0.09 25)", "oklch(0.36 0.12 25)", "oklch(0.47 0.14 25)", "oklch(0.58 0.16 25)", "oklch(0.66 0.17 25)", "oklch(0.73 0.17 25)", "oklch(0.9 0.07 25)"] },
+      "warn": { "role": "semantic", "displayName": "Caution Amber", "canonical": "oklch(0.84 0.13 85)", "tonalRamp": ["oklch(0.16 0.04 85)", "oklch(0.27 0.07 85)", "oklch(0.38 0.09 85)", "oklch(0.5 0.11 85)", "oklch(0.62 0.12 85)", "oklch(0.73 0.13 85)", "oklch(0.84 0.13 85)", "oklch(0.94 0.06 85)"] },
+      "viz-equity": { "role": "data-viz", "displayName": "Equities Teal", "canonical": "oklch(0.72 0.11 205)", "tonalRamp": ["oklch(0.18 0.04 205)", "oklch(0.3 0.06 205)", "oklch(0.42 0.08 205)", "oklch(0.54 0.1 205)", "oklch(0.63 0.11 205)", "oklch(0.72 0.11 205)", "oklch(0.82 0.09 205)", "oklch(0.92 0.05 205)"] },
+      "viz-option": { "role": "data-viz", "displayName": "Options Blue", "canonical": "oklch(0.66 0.1 255)", "tonalRamp": ["oklch(0.17 0.04 255)", "oklch(0.28 0.06 255)", "oklch(0.39 0.08 255)", "oklch(0.5 0.09 255)", "oklch(0.58 0.1 255)", "oklch(0.66 0.1 255)", "oklch(0.78 0.08 255)", "oklch(0.9 0.04 255)"] },
+      "viz-crypto": { "role": "data-viz", "displayName": "Crypto Violet", "canonical": "oklch(0.72 0.12 300)", "tonalRamp": ["oklch(0.18 0.05 300)", "oklch(0.3 0.07 300)", "oklch(0.42 0.09 300)", "oklch(0.54 0.11 300)", "oklch(0.63 0.12 300)", "oklch(0.72 0.12 300)", "oklch(0.82 0.09 300)", "oklch(0.92 0.05 300)"] },
+      "viz-cash": { "role": "data-viz", "displayName": "Cash Green", "canonical": "oklch(0.78 0.09 160)", "tonalRamp": ["oklch(0.18 0.03 160)", "oklch(0.3 0.05 160)", "oklch(0.42 0.06 160)", "oklch(0.54 0.07 160)", "oklch(0.66 0.08 160)", "oklch(0.78 0.09 160)", "oklch(0.86 0.07 160)", "oklch(0.94 0.04 160)"] },
+      "viz-home": { "role": "data-viz", "displayName": "Home Amber", "canonical": "oklch(0.74 0.1 75)", "tonalRamp": ["oklch(0.17 0.04 75)", "oklch(0.28 0.06 75)", "oklch(0.4 0.07 75)", "oklch(0.52 0.08 75)", "oklch(0.63 0.09 75)", "oklch(0.74 0.1 75)", "oklch(0.84 0.08 75)", "oklch(0.93 0.05 75)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display (mono)", "purpose": "The net-worth numeral only — the single biggest thing on screen." },
+      "headline": { "displayName": "Headline", "purpose": "Section heads: Holdings, Home, Activity." },
+      "title": { "displayName": "Title", "purpose": "Sheet titles and the move line." },
+      "body": { "displayName": "Body", "purpose": "Prose and form values; +0.01em light-on-dark compensation." },
+      "label": { "displayName": "Label", "purpose": "Field labels, column heads, status text. Normal case — never tracked uppercase." },
+      "numeric": { "displayName": "Numeric (mono)", "purpose": "Every figure in a data context — The Mono Numbers Rule." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.25, 1, 0.5, 1)", "purpose": "Default state-change easing (ease-out-quart)." },
+      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Sheet entrance and allocation-bar resize — confident, decisive." },
+      { "name": "t-fast", "value": "120ms", "purpose": "Hover/press feedback." },
+      { "name": "t-med", "value": "200ms", "purpose": "State changes: chevrons, toggles." },
+      { "name": "t-slow", "value": "320ms", "purpose": "Sheet entrance, layout-level transitions." },
+      { "name": "number-tick", "value": "350ms ease-out-quart via rAF", "purpose": "Net-worth numeral interpolates to new values; instant under reduced motion." },
+      { "name": "row-pulse", "value": "900ms one-shot cyan-soft background fade", "purpose": "Marks a ledger row whose live value just changed." }
+    ],
+    "breakpoints": [
+      { "name": "mobile-max", "value": "640px" },
+      { "name": "two-column-min", "value": "920px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one cyan action per context. Dark text on the pale cyan fill — never white.",
+      "html": "<button class=\"ds-btn-primary\">Add position</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--cyan, oklch(0.8 0.125 200)); color: var(--on-cyan, oklch(0.14 0.03 215)); font-family: 'Space Grotesk Variable', sans-serif; font-weight: 600; font-size: 0.875rem; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; transition: background 120ms cubic-bezier(0.25,1,0.5,1), transform 120ms cubic-bezier(0.25,1,0.5,1); } .ds-btn-primary:hover { background: var(--cyan-hover, oklch(0.85 0.115 198)); } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:focus-visible { outline: 2px solid var(--cyan, oklch(0.8 0.125 200)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary actions: bordered, quiet, cyan border on hover.",
+      "html": "<button class=\"ds-btn-ghost\">Export JSON</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; gap: 0.5rem; background: none; color: var(--ink-2, oklch(0.8 0.025 203)); font-family: 'Space Grotesk Variable', sans-serif; font-weight: 500; font-size: 0.875rem; padding: 0.5rem 1rem; border: 1px solid var(--line, oklch(0.31 0.04 212)); border-radius: 6px; cursor: pointer; transition: border-color 120ms cubic-bezier(0.25,1,0.5,1), color 120ms cubic-bezier(0.25,1,0.5,1); } .ds-btn-ghost:hover { border-color: var(--cyan, oklch(0.8 0.125 200)); color: var(--ink, oklch(0.94 0.012 200)); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--cyan, oklch(0.8 0.125 200)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Danger Button (two-step)",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive actions confirm on second press: rest state is text-only, armed state tints loss-red.",
+      "html": "<button class=\"ds-btn-danger\">Delete</button> <button class=\"ds-btn-danger ds-confirming\">Confirm delete</button>",
+      "css": ".ds-btn-danger { background: none; color: var(--loss, oklch(0.73 0.17 25)); font-family: 'Space Grotesk Variable', sans-serif; font-weight: 500; font-size: 0.875rem; padding: 0.5rem 1rem; border: 1px solid transparent; border-radius: 6px; cursor: pointer; transition: border-color 120ms, background 120ms; } .ds-btn-danger:hover, .ds-btn-danger.ds-confirming { border-color: var(--loss, oklch(0.73 0.17 25)); background: var(--loss-soft, oklch(0.73 0.17 25 / 0.13)); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Sunken field: bg-level fill one step below the sheet surface, cyan focus border, no glow.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Ticker <span class=\"ds-field-hint\">FMP symbol, e.g. AAPL</span></span><input class=\"ds-input\" placeholder=\"e.g. 0700.HK\" /></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 0.25rem; font-family: 'Space Grotesk Variable', sans-serif; } .ds-field-label { font-size: 0.75rem; font-weight: 500; color: var(--ink-2, oklch(0.8 0.025 203)); } .ds-field-hint { color: var(--muted, oklch(0.7 0.035 206)); font-weight: 400; } .ds-input { background: var(--bg, oklch(0.155 0.03 215)); border: 1px solid var(--line, oklch(0.31 0.04 212)); border-radius: 6px; color: var(--ink, oklch(0.94 0.012 200)); padding: 0.5rem 0.75rem; font-size: 1rem; font-family: inherit; transition: border-color 120ms; } .ds-input::placeholder { color: var(--muted, oklch(0.7 0.035 206)); } .ds-input:focus { outline: none; border-color: var(--cyan, oklch(0.8 0.125 200)); }"
+    },
+    {
+      "name": "Type Tabs",
+      "kind": "chip",
+      "refersTo": "chip-tab",
+      "description": "Position-type picker: ghost chips, the active one fills cyan with dark text.",
+      "html": "<div class=\"ds-tabs\"><button class=\"ds-tab ds-active\">Equity</button><button class=\"ds-tab\">Option</button><button class=\"ds-tab\">Crypto</button><button class=\"ds-tab\">Cash</button></div>",
+      "css": ".ds-tabs { display: flex; gap: 0.5rem; } .ds-tab { font-family: 'Space Grotesk Variable', sans-serif; font-size: 0.875rem; font-weight: 500; color: var(--ink-2, oklch(0.8 0.025 203)); background: none; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--line, oklch(0.31 0.04 212)); cursor: pointer; transition: background 120ms, color 120ms, border-color 120ms; } .ds-tab:hover { border-color: var(--cyan, oklch(0.8 0.125 200)); } .ds-tab.ds-active { background: var(--cyan, oklch(0.8 0.125 200)); color: var(--on-cyan, oklch(0.14 0.03 215)); border-color: var(--cyan, oklch(0.8 0.125 200)); font-weight: 600; }"
+    },
+    {
+      "name": "Currency Toggle",
+      "kind": "chip",
+      "refersTo": "chip-tab",
+      "description": "HKD ↔ Native peek: a small bordered chip with cyan text and aria-pressed state.",
+      "html": "<button class=\"ds-toggle\" aria-pressed=\"false\">HKD</button>",
+      "css": ".ds-toggle { font-family: 'JetBrains Mono Variable', monospace; font-size: 0.75rem; font-weight: 600; color: var(--cyan, oklch(0.8 0.125 200)); background: none; border: 1px solid var(--line, oklch(0.31 0.04 212)); border-radius: 6px; padding: 0.25rem 0.75rem; cursor: pointer; transition: border-color 120ms; } .ds-toggle:hover { border-color: var(--cyan, oklch(0.8 0.125 200)); }"
+    },
+    {
+      "name": "Attention Chip",
+      "kind": "custom",
+      "description": "Action-strip item: status dot + terse message; the strip renders only when something needs attention.",
+      "html": "<span class=\"ds-chip ds-chip-warn\"><span class=\"ds-dot\"></span>NVDA 180C expires in 9d</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 0.5rem; font-family: 'Space Grotesk Variable', sans-serif; font-size: 0.875rem; color: var(--ink, oklch(0.94 0.012 200)); padding: 0.5rem 0.75rem; border-radius: 10px; border: 1px solid var(--line-soft, oklch(0.245 0.038 213)); background: var(--surface, oklch(0.19 0.035 214)); } .ds-chip-warn { border-color: oklch(0.84 0.13 85 / 0.35); } .ds-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--warn, oklch(0.84 0.13 85)); }"
+    },
+    {
+      "name": "Ledger Row",
+      "kind": "custom",
+      "description": "Signature table row: two-line identity cell, right-aligned mono figures, hairline separation, no gridlines.",
+      "html": "<table class=\"ds-ledger\"><thead><tr><th>Position</th><th class=\"ds-num-col\">Qty</th><th class=\"ds-num-col\">Value</th><th class=\"ds-num-col\">P&L</th></tr></thead><tbody><tr tabindex=\"0\"><td><span class=\"ds-ticker\">0700.HK</span><span class=\"ds-name\">Tencent</span></td><td class=\"ds-num-col ds-num\">800</td><td class=\"ds-num-col ds-num\">HK$419,600</td><td class=\"ds-num-col ds-num ds-gain\">+HK$141,200</td></tr><tr tabindex=\"0\"><td><span class=\"ds-ticker\">NVDA</span><span class=\"ds-name\">NVIDIA</span></td><td class=\"ds-num-col ds-num\">120</td><td class=\"ds-num-col ds-num\">HK$160,674</td><td class=\"ds-num-col ds-num ds-loss\">−HK$8,982</td></tr></tbody></table>",
+      "css": ".ds-ledger { width: 100%; border-collapse: collapse; font-family: 'Space Grotesk Variable', sans-serif; } .ds-ledger th { text-align: left; font-size: 0.75rem; font-weight: 500; color: var(--muted, oklch(0.7 0.035 206)); padding: 0.5rem; } .ds-ledger td { padding: 0.75rem 0.5rem; border-bottom: 1px solid var(--line-soft, oklch(0.245 0.038 213)); font-size: 0.875rem; vertical-align: baseline; } .ds-ledger tbody tr { cursor: pointer; transition: background 120ms; } .ds-ledger tbody tr:hover { background: var(--surface, oklch(0.19 0.035 214)); } .ds-ledger tbody tr:last-child td { border-bottom: none; } .ds-ledger .ds-num-col { text-align: right; } .ds-num { font-family: 'JetBrains Mono Variable', monospace; letter-spacing: -0.01em; } .ds-ticker { display: block; font-weight: 600; color: var(--ink, oklch(0.94 0.012 200)); } .ds-name { display: block; color: var(--muted, oklch(0.7 0.035 206)); font-size: 0.75rem; } .ds-gain { color: var(--gain, oklch(0.78 0.16 155)); } .ds-loss { color: var(--loss, oklch(0.73 0.17 25)); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Instrument Panel",
+    "overview": "Not a terminal, not a spreadsheet — an instrument panel. A purpose-built cockpit for one pilot, where a committed deep teal surface carries the identity and live numbers provide the motion. The brand color is not an accent applied to a gray app; the app is built out of the brand color. Depth comes from tonal steps of the same teal, interactivity speaks in one cyan voice, and every numeral is set in a tabular monospace so values align, tick, and never shift the layout.\n\nThe system explicitly rejects Bloomberg terminal clutter (energy is not density), the spreadsheet aesthetic (tables earn hierarchy through typography and spacing, never gridlines), and generic SaaS dashboard scaffolding. It is one person's instrument: zero marketing chrome, zero hand-holding, and an attention strip that simply does not exist when nothing needs attention.",
+    "keyCharacteristics": [
+      "Committed color: the teal surface family carries 30–60% of every screen",
+      "Numbers as the kinetic layer — mono numerals that tick, rows that pulse once on change",
+      "The three-second answer: net worth, today's move, and anything actionable win the visual race",
+      "Silence is a feature: flags and strips render only when something is genuinely wrong",
+      "Quiet density: fewer, larger, better-set numbers beat many small ones"
+    ],
+    "rules": [
+      { "name": "The Committed Surface Rule", "body": "The teal is the surface, not a garnish. If a screen reads as neutral-with-a-teal-accent, it has drifted off-system.", "section": "colors" },
+      { "name": "The Semantic Quarantine Rule", "body": "Gain/loss/warn colors mark direction and state exclusively. They never decorate, never brand, and never appear without a sign, arrow, or word carrying the same meaning.", "section": "colors" },
+      { "name": "The One Voice Rule", "body": "Cyan means 'you can act here.' Anything cyan is interactive; nothing decorative is cyan.", "section": "colors" },
+      { "name": "The Mono Numbers Rule", "body": "Every numeral in a data context is set in JetBrains Mono. A figure set in Space Grotesk is a bug.", "section": "typography" },
+      { "name": "The Quiet Caps Rule", "body": "No tracked-uppercase eyebrows, kickers, or label caps anywhere. Hierarchy comes from weight, size, and the ink ramp.", "section": "typography" },
+      { "name": "The No-Shadow Rule", "body": "If an element needs to feel 'above,' lighten its surface one ramp step. A box-shadow appearing anywhere in this codebase is off-system.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do set every numeral in a data context in JetBrains Mono — alignment and shift-free ticking depend on it.",
+      "Do pair every gain/loss color with a sign, arrow, or word; color is never the only encoding.",
+      "Do express depth by lightening the teal ramp one step; keep the system shadow-free.",
+      "Do keep the action strip silent when nothing is wrong — absence is the success state.",
+      "Do give every animation a prefers-reduced-motion collapse; ticks and pulses become instant updates.",
+      "Do keep microcopy terse and informational: 'as of 16:02', 'expires in 9d', 'valued 4 mo ago — update?'. No exclamation marks."
+    ],
+    "donts": [
+      "Don't drift into Bloomberg terminal clutter — no wall-to-wall density, no intimidating chrome, not every pixel filled.",
+      "Don't ship the spreadsheet aesthetic — no gridlines-everywhere, flat-hierarchy 'Excel in a browser' tables.",
+      "Don't reach for generic SaaS dashboard scaffolding — cookie-cutter metric-card grids and template hero-stats.",
+      "Don't put white text on the cyan fill — dark on-cyan text is the system's contract (11.2:1).",
+      "Don't use box-shadows, gradient text, side-stripe borders, tracked-uppercase eyebrows, or spinners over content.",
+      "Don't use the viz palette outside the allocation band, or cyan on anything non-interactive.",
+      "Don't let a destructive action fire on first click — two-step confirm is mandatory for delete and undo."
+    ]
+  }
+}

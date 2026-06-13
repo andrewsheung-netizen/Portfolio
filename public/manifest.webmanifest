@@ -1,0 +1,17 @@
+{
+  "name": "Portfolio",
+  "short_name": "Portfolio",
+  "description": "A live personal net-worth and assets tracker — investments, options, crypto, cash and property in one HKD picture.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0d1a20",
+  "theme_color": "#0d1a20",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "pwa-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "pwa-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
