@@ -81,7 +81,8 @@ export async function seedDemo(): Promise<boolean> {
   ])
 
   await db.fxRates.bulkAdd([
-    { pair: 'USDHKD', rate: 7.81, updatedAt: now - h12, source: 'manual' },
+    // seeded so values show before the first refresh; marked live so it auto-updates
+    { pair: 'USDHKD', rate: 7.81, updatedAt: now - h12, source: 'live' },
   ])
 
   // ~90 days of plausible history ending at the current computed net worth

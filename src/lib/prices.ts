@@ -88,8 +88,31 @@ async function fmpQuotes(symbols: string[], key: string): Promise<Map<string, nu
   return out
 }
 
+// Keyless, CORS-enabled FX feed (USD-based; we derive cross-rates to HKD).
+const FXAPI = 'https://open.er-api.com/v6/latest/USD'
+
+/**
+ * Fetch HKD-per-unit rates for the given currencies from a free keyless source.
+ * Returns a Map of `${ccy}HKD` → rate. Throws on network/parse failure.
+ */
+async function fetchFxToHkd(currencies: Currency[]): Promise<Map<string, number>> {
+  const out = new Map<string, number>()
+  if (currencies.length === 0) return out
+  const res = await fetch(FXAPI)
+  if (!res.ok) throw new Error(`FX ${res.status}`)
+  const data = (await res.json()) as { rates?: Record<string, number> }
+  const rates = data.rates
+  const hkdPerUsd = rates?.HKD
+  if (!rates || !hkdPerUsd) throw new Error('FX: no HKD rate')
+  for (const ccy of currencies) {
+    const perUsd = rates[ccy]
+    if (perUsd && Number.isFinite(perUsd)) out.set(`${ccy}${BASE_CURRENCY}`, hkdPerUsd / perUsd)
+  }
+  return out
+}
+
 /** Currencies referenced anywhere in the data that need an FX pair to HKD. */
-async function currenciesInUse(): Promise<Currency[]> {
+export async function currenciesInUse(): Promise<Currency[]> {
   const [equities, options, cash, properties, mortgages, cryptos] = await Promise.all([
     db.equities.toArray(),
     db.options.toArray(),
@@ -110,8 +133,8 @@ async function currenciesInUse(): Promise<Currency[]> {
 }
 
 /**
- * Refresh everything refreshable: crypto via Binance (public, keyless), equity
- * quotes + FX rates via FMP (needs a key). Option marks stay manual in v1.
+ * Refresh everything refreshable: crypto via Binance and FX via a free FX feed
+ * (both keyless), equity quotes via FMP (needs a key). Option marks stay manual.
  * Always captures a snapshot afterwards, even on partial failure.
  */
 export async function refreshAll(): Promise<RefreshResult> {
@@ -141,23 +164,32 @@ export async function refreshAll(): Promise<RefreshResult> {
     }
   }
 
-  // --- Equities + FX: FMP, needs a key ---
-  if (key) {
-    const [equities, ccys] = await Promise.all([db.equities.toArray(), currenciesInUse()])
-    const equitySymbols = [...new Set(equities.map((p) => p.ticker))]
-    const fxPairs = ccys.map((c) => `${c}${BASE_CURRENCY}`)
-
-    const tryBatch = async (symbols: string[], label: string): Promise<Map<string, number>> => {
-      try {
-        return await fmpQuotes(symbols, key)
-      } catch {
-        failed.push(label)
-        return new Map()
+  // --- FX: free keyless feed; never clobbers a manually-set rate ---
+  const ccys = await currenciesInUse()
+  if (ccys.length > 0) {
+    try {
+      const fx = await fetchFxToHkd(ccys)
+      const existing = new Map((await db.fxRates.toArray()).map((r) => [r.pair, r]))
+      for (const [pair, rate] of fx) {
+        if (existing.get(pair)?.source === 'manual') continue // respect user overrides
+        await db.fxRates.put({ pair, rate, updatedAt: now, source: 'live' })
+        updated++
       }
+    } catch {
+      failed.push('fx')
     }
+  }
 
-    const [eq, fx] = await Promise.all([tryBatch(equitySymbols, 'equities'), tryBatch(fxPairs, 'fx')])
-
+  // --- Equities: FMP, needs a key ---
+  if (key) {
+    const equities = await db.equities.toArray()
+    const equitySymbols = [...new Set(equities.map((p) => p.ticker))]
+    let eq = new Map<string, number>()
+    try {
+      eq = await fmpQuotes(equitySymbols, key)
+    } catch {
+      failed.push('equities')
+    }
     for (const p of equities) {
       const price = eq.get(p.ticker)
       if (price !== undefined) {
@@ -165,13 +197,6 @@ export async function refreshAll(): Promise<RefreshResult> {
         updated++
       } else if (equitySymbols.includes(p.ticker) && eq.size > 0) {
         failed.push(p.ticker)
-      }
-    }
-    for (const pair of fxPairs) {
-      const rate = fx.get(pair)
-      if (rate !== undefined) {
-        await db.fxRates.put({ pair, rate, updatedAt: now, source: 'live' })
-        updated++
       }
     }
   }

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, eraseAll, exportAll, getSetting, importAll, setSetting, type ExportBundle } from '../lib/db'
-import { captureSnapshot } from '../lib/prices'
+import { captureSnapshot, currenciesInUse } from '../lib/prices'
+import { BASE_CURRENCY } from '../lib/types'
 import { age } from '../lib/format'
 import { Sheet } from './Sheet'
 
@@ -49,6 +50,20 @@ export function SettingsSheet({ open, onClose, isEmpty }: Props) {
   const [erasing, setErasing] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const fxRates = useLiveQuery(() => db.fxRates.toArray(), [])
+  const neededCcys = useLiveQuery(() => currenciesInUse(), [])
+
+  // Every currency the portfolio needs converted to HKD, merged with any rate
+  // already stored — so a pair can always be set, even before a live fetch.
+  const fxRows = (() => {
+    const byPair = new Map((fxRates ?? []).map((r) => [r.pair, r]))
+    const pairs = new Set<string>([
+      ...(neededCcys ?? []).map((c) => `${c}${BASE_CURRENCY}`),
+      ...(fxRates ?? []).map((r) => r.pair),
+    ])
+    return [...pairs]
+      .sort()
+      .map((pair) => ({ pair, rate: byPair.get(pair) }))
+  })()
 
   useEffect(() => {
     if (open) {
@@ -118,8 +133,8 @@ export function SettingsSheet({ open, onClose, isEmpty }: Props) {
         <section className="settings-section">
           <h3>Live prices</h3>
           <p className="settings-note">
-            Equities, crypto and FX refresh from Financial Modeling Prep. The key is stored only on this
-            device. Option marks stay manual in this version.
+            Crypto and FX rates update automatically — no key needed. Add a Financial Modeling Prep key for live
+            equity prices; it's stored only on this device. Option marks stay manual.
           </p>
           <div className="settings-row">
             <input
@@ -137,34 +152,51 @@ export function SettingsSheet({ open, onClose, isEmpty }: Props) {
           </div>
         </section>
 
-        {fxRates && fxRates.length > 0 && (
+        {fxRows.length > 0 && (
           <section className="settings-section">
             <h3>FX rates</h3>
-            <p className="settings-note">Used to convert holdings to HKD. Edit if a live rate is missing or stale.</p>
+            <p className="settings-note">
+              Rates to HKD fetch automatically on refresh. Type a value to override one; a manual rate sticks and
+              won't be auto-updated. Clear it to return to automatic.
+            </p>
             <ul className="fx-list">
-              {fxRates.map((r) => (
-                <li key={r.pair} className="fx-row">
-                  <span className="num fx-pair">{r.pair.slice(0, 3)}→{r.pair.slice(3)}</span>
-                  <input
-                    className="input num fx-input"
-                    type="number"
-                    step="any"
-                    min="0"
-                    defaultValue={r.rate}
-                    aria-label={`${r.pair} rate`}
-                    onBlur={async (e) => {
-                      const v = Number(e.target.value)
-                      if (Number.isFinite(v) && v > 0 && v !== r.rate) {
-                        await db.fxRates.put({ pair: r.pair, rate: v, updatedAt: Date.now(), source: 'manual' })
-                        await captureSnapshot()
-                      }
-                    }}
-                  />
-                  <span className="fx-meta">
-                    {r.source === 'live' ? 'live' : 'manual'} · {age(r.updatedAt)}
-                  </span>
-                </li>
-              ))}
+              {fxRows.map(({ pair, rate }) => {
+                const saveRate = async (v: number) => {
+                  await db.fxRates.put({ pair, rate: v, updatedAt: Date.now(), source: 'manual' })
+                  await captureSnapshot()
+                }
+                const clearRate = async () => {
+                  await db.fxRates.delete(pair)
+                  await captureSnapshot()
+                }
+                return (
+                  <li key={`${pair}-${rate?.rate ?? 'none'}-${rate?.source ?? ''}`} className="fx-row">
+                    <span className="num fx-pair">
+                      {pair.slice(0, 3)}→{pair.slice(3)}
+                    </span>
+                    <input
+                      className="input num fx-input"
+                      type="number"
+                      inputMode="decimal"
+                      step="any"
+                      min="0"
+                      defaultValue={rate?.rate ?? ''}
+                      placeholder="set rate"
+                      aria-label={`${pair} rate`}
+                      onBlur={(e) => {
+                        const raw = e.target.value.trim()
+                        if (raw === '') {
+                          if (rate) void clearRate()
+                          return
+                        }
+                        const v = Number(raw)
+                        if (Number.isFinite(v) && v > 0 && v !== rate?.rate) void saveRate(v)
+                      }}
+                    />
+                    <span className="fx-meta">{rate ? `${rate.source} · ${age(rate.updatedAt)}` : 'not set'}</span>
+                  </li>
+                )
+              })}
             </ul>
           </section>
         )}
