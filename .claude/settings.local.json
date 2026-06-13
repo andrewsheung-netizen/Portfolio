@@ -38,7 +38,11 @@
       "Bash(git --version)",
       "Bash(echo \"git: $\\(git --version || echo none\\)\")",
       "Bash(gh --version)",
-      "Bash(echo \"gh: $\\(gh --version)"
+      "Bash(echo \"gh: $\\(gh --version)",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost:5173/)",
+      "Bash(echo \"dev 5173: HTTP $\\(curl -s -o /dev/null -w '%{http_code}' http://localhost:5173/\\)\")",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(echo \"dev index has root div: $\\(curl -s http://localhost:5173/)"
     ]
   }
 }
