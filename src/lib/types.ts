@@ -87,17 +87,18 @@ export interface Mortgage {
   propertyId: number
   lender: string
   originalPrincipal: number
-  /** annual rate, e.g. 0.0385 */
-  annualRate: number
-  /** monthly payment amount */
-  monthlyPayment: number
-  /** ISO date of first payment */
-  firstPaymentDate: string
-  termMonths: number
   currency: Currency
-  /** optional manual override of computed balance */
+  /** the balance when tracking started; monthly payments draw down from here */
   balanceOverride?: number
+  /** when balanceOverride / paymentsLeft were set (basis for counting payments since) */
   balanceOverrideAt?: number
+  /** monthly payments remaining at the basis date (12 = one year, 360 = 30 years) */
+  paymentsLeft?: number
+  /** legacy amortization inputs — optional; kept for older data, no longer entered */
+  annualRate?: number
+  monthlyPayment?: number
+  firstPaymentDate?: string
+  termMonths?: number
 }
 
 /**

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../lib/db'
+import { paymentsElapsed } from '../lib/compute'
 import { captureSnapshot, lookupQuote } from '../lib/prices'
 import type {
   Account,
@@ -1405,10 +1406,7 @@ function PropertyForm({ row, done }: { row?: Property; done: DoneFn }) {
   const [lender, setLender] = useState('')
   const [principal, setPrincipal] = useState('')
   const [currentBalance, setCurrentBalance] = useState('')
-  const [ratePct, setRatePct] = useState('')
-  const [payment, setPayment] = useState('')
-  const [firstPayment, setFirstPayment] = useState('')
-  const [termYears, setTermYears] = useState('30')
+  const [paymentsLeft, setPaymentsLeft] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -1424,10 +1422,10 @@ function PropertyForm({ row, done }: { row?: Property; done: DoneFn }) {
           setLender(m.lender)
           setPrincipal(String(m.originalPrincipal))
           setCurrentBalance(m.balanceOverride !== undefined ? String(m.balanceOverride) : '')
-          setRatePct(String(m.annualRate * 100))
-          setPayment(String(m.monthlyPayment))
-          setFirstPayment(m.firstPaymentDate)
-          setTermYears(String(m.termMonths / 12))
+          // prefer the stored count; for legacy data derive remaining from the term
+          const left =
+            m.paymentsLeft ?? (m.termMonths !== undefined ? Math.max(0, m.termMonths - paymentsElapsed(m)) : undefined)
+          setPaymentsLeft(left !== undefined ? String(left) : '')
         })
     }
     return () => {
@@ -1436,8 +1434,8 @@ function PropertyForm({ row, done }: { row?: Property; done: DoneFn }) {
   }, [row?.id])
 
   const mortgageValid = useMemo(
-    () => !withMortgage || (lender.trim() && principal && ratePct && payment && firstPayment && termYears),
-    [withMortgage, lender, principal, ratePct, payment, firstPayment, termYears],
+    () => !withMortgage || Boolean(lender.trim() && principal && currentBalance && paymentsLeft),
+    [withMortgage, lender, principal, currentBalance, paymentsLeft],
   )
 
   return (
@@ -1462,18 +1460,19 @@ function PropertyForm({ row, done }: { row?: Property; done: DoneFn }) {
             propertyId = (await db.properties.add(patch)) as number
           }
           if (withMortgage) {
-            const hasOverride = currentBalance.trim() !== ''
             const m: Omit<Mortgage, 'id'> = {
               propertyId,
               lender: lender.trim(),
               originalPrincipal: num(principal),
-              annualRate: num(ratePct) / 100,
-              monthlyPayment: num(payment),
-              firstPaymentDate: firstPayment,
-              termMonths: Math.round(num(termYears) * 12),
               currency,
-              balanceOverride: hasOverride ? num(currentBalance) : undefined,
-              balanceOverrideAt: hasOverride ? Date.now() : undefined,
+              balanceOverride: num(currentBalance),
+              balanceOverrideAt: Date.now(),
+              paymentsLeft: Math.round(num(paymentsLeft)),
+              // legacy amortization fields are intentionally cleared
+              annualRate: undefined,
+              monthlyPayment: undefined,
+              firstPaymentDate: undefined,
+              termMonths: undefined,
             }
             if (existingMortgage?.id) await db.mortgages.update(existingMortgage.id, m)
             else await db.mortgages.add(m)
@@ -1512,20 +1511,11 @@ function PropertyForm({ row, done }: { row?: Property; done: DoneFn }) {
           <Field label="Original principal">
             <input className="input num" type="number" step="any" min="0" required value={principal} onChange={(e) => setPrincipal(e.target.value)} />
           </Field>
-          <Field label="Current balance" hint="optional; balance now, before logging payments">
-            <input className="input num" type="number" step="any" min="0" value={currentBalance} onChange={(e) => setCurrentBalance(e.target.value)} />
+          <Field label="Current balance" hint="what you owe now">
+            <input className="input num" type="number" step="any" min="0" required value={currentBalance} onChange={(e) => setCurrentBalance(e.target.value)} />
           </Field>
-          <Field label="Rate" hint="% per year">
-            <input className="input num" type="number" step="any" min="0" required value={ratePct} onChange={(e) => setRatePct(e.target.value)} />
-          </Field>
-          <Field label="Monthly payment">
-            <input className="input num" type="number" step="any" min="0" required value={payment} onChange={(e) => setPayment(e.target.value)} />
-          </Field>
-          <Field label="First payment">
-            <input className="input num" type="date" required value={firstPayment} onChange={(e) => setFirstPayment(e.target.value)} />
-          </Field>
-          <Field label="Term" hint="years">
-            <input className="input num" type="number" step="any" min="1" required value={termYears} onChange={(e) => setTermYears(e.target.value)} />
+          <Field label="Payments left" hint="months remaining (1 yr = 12, 30 yr = 360)">
+            <input className="input num" type="number" step="1" min="0" required value={paymentsLeft} onChange={(e) => setPaymentsLeft(e.target.value)} />
           </Field>
         </div>
       )}

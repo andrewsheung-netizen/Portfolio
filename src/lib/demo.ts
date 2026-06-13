@@ -60,14 +60,12 @@ export async function seedDemo(): Promise<boolean> {
     propertyId: propertyId as number,
     lender: 'HSBC',
     originalPrincipal: 5_880_000,
-    annualRate: 0.0388,
-    monthlyPayment: 26_350,
-    firstPaymentDate: '2021-03-01',
-    termMonths: 360,
     currency: 'HKD',
-    // current balance after ~3.5 years; monthly payments draw down from here
+    // balance + payments-left as of the basis (~3 months ago); the two logged
+    // statements below post after it, so they draw the balance/remaining down
     balanceOverride: 5_268_000,
-    balanceOverrideAt: now,
+    balanceOverrideAt: now - 90 * 86_400_000,
+    paymentsLeft: 298,
   })) as number
 
   // two recent statements — HIBOR-linked, so the interest/principal split moves

@@ -28,13 +28,34 @@ export function toBase(amount: number, from: Currency, fx: FxMap): number | null
 
 /* ---------- Mortgage amortization ---------- */
 
-/** Months of payments elapsed since the first payment date (clamped to term). */
+/** Months of payments elapsed since the first payment date (legacy amortization only). */
 export function paymentsElapsed(m: Mortgage, at: Date = new Date()): number {
+  if (!m.firstPaymentDate || !m.termMonths) return 0
   const first = new Date(`${m.firstPaymentDate}T00:00:00`)
   if (at < first) return 0
   const months =
     (at.getFullYear() - first.getFullYear()) * 12 + (at.getMonth() - first.getMonth()) + (at.getDate() >= first.getDate() ? 1 : 0)
   return Math.max(0, Math.min(months, m.termMonths))
+}
+
+/** A YYYY-MM-DD string for a timestamp, for comparing payment dates to the basis. */
+function tsToISODate(ts: number): string {
+  const d = new Date(ts)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/**
+ * Monthly payments remaining: the entered `paymentsLeft` minus the payments
+ * logged on/after the basis date. Returns null if paymentsLeft isn't set.
+ */
+export function paymentsRemaining(m: Mortgage, payments: MortgagePayment[]): number | null {
+  if (m.paymentsLeft === undefined) return null
+  const basis = m.balanceOverrideAt !== undefined ? tsToISODate(m.balanceOverrideAt) : null
+  const made =
+    m.id !== undefined
+      ? paymentsFor(payments, m.id).filter((p) => basis === null || p.date >= basis).length
+      : 0
+  return Math.max(0, m.paymentsLeft - made)
 }
 
 /** Logged payments for one mortgage on or before `at`, newest first. */
@@ -53,18 +74,25 @@ export function paymentsFor(payments: MortgagePayment[], mortgageId: number, at?
  */
 export function mortgageBalance(m: Mortgage, payments: MortgagePayment[] = [], at: Date = new Date()): number {
   const logged = m.id !== undefined ? paymentsFor(payments, m.id, at) : []
-  if (logged.length > 0) {
-    const baseline = m.balanceOverride ?? m.originalPrincipal
-    const repaid = logged.reduce((s, p) => s + p.principal, 0)
-    return Math.max(0, baseline - repaid)
+  // Current balance is the baseline; subtract only principal repaid on/after the
+  // basis date (earlier payments are already reflected in the entered balance).
+  if (m.balanceOverride !== undefined) {
+    const basis = m.balanceOverrideAt !== undefined ? tsToISODate(m.balanceOverrideAt) : null
+    const repaid = logged.filter((p) => basis === null || p.date >= basis).reduce((s, p) => s + p.principal, 0)
+    return Math.max(0, m.balanceOverride - repaid)
   }
-  if (m.balanceOverride !== undefined) return m.balanceOverride
-  const n = paymentsElapsed(m, at)
-  const r = m.annualRate / 12
-  if (r === 0) return Math.max(0, m.originalPrincipal - m.monthlyPayment * n)
-  const growth = Math.pow(1 + r, n)
-  const balance = m.originalPrincipal * growth - (m.monthlyPayment * (growth - 1)) / r
-  return Math.max(0, balance)
+  if (logged.length > 0) {
+    return Math.max(0, m.originalPrincipal - logged.reduce((s, p) => s + p.principal, 0))
+  }
+  // Legacy amortization fallback, only when those inputs exist on older data.
+  if (m.annualRate !== undefined && m.monthlyPayment !== undefined && m.firstPaymentDate && m.termMonths) {
+    const n = paymentsElapsed(m, at)
+    const r = m.annualRate / 12
+    if (r === 0) return Math.max(0, m.originalPrincipal - m.monthlyPayment * n)
+    const growth = Math.pow(1 + r, n)
+    return Math.max(0, m.originalPrincipal * growth - (m.monthlyPayment * (growth - 1)) / r)
+  }
+  return m.originalPrincipal
 }
 
 /** Interest paid on a mortgage within a calendar year (native currency). */

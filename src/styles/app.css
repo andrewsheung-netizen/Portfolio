@@ -13,7 +13,10 @@
   display: flex;
   align-items: center;
   gap: var(--s-4);
-  padding: var(--s-3) var(--s-5);
+  /* Honor the iOS safe area so the bar clears the status bar / Dynamic Island
+     in installed (standalone) PWA mode, and the notch in landscape. */
+  padding: calc(var(--s-3) + env(safe-area-inset-top)) calc(var(--s-5) + env(safe-area-inset-right)) var(--s-3)
+    calc(var(--s-5) + env(safe-area-inset-left));
   background: var(--bg);
   border-bottom: 1px solid var(--line-soft);
 }
