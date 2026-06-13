@@ -70,16 +70,6 @@ export function DownArrow({ size = 14 }: IconProps) {
   )
 }
 
-export function HelpIcon({ size = 16 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" {...base} aria-hidden="true">
-      <circle cx="8" cy="8" r="6.2" />
-      <path d="M6.1 6.2a1.9 1.9 0 1 1 2.5 1.8c-.5.2-.85.6-.85 1.2v.3" />
-      <circle cx="7.75" cy="11.4" r="0.05" strokeWidth="1.4" />
-    </svg>
-  )
-}
-
 export function SunIcon({ size = 16 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" {...base} aria-hidden="true">

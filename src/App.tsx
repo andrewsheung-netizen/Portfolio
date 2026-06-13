@@ -15,9 +15,8 @@ import { FirstRun } from './components/FirstRun'
 import { AddSheet, type EditTarget } from './components/forms'
 import { MortgagePaymentSheet } from './components/MortgagePayment'
 import { SettingsSheet } from './components/Settings'
-import { HelpSheet } from './components/HelpSheet'
 import { UndoToast } from './components/UndoToast'
-import { RefreshIcon, SettingsIcon, PlusIcon, HelpIcon, SunIcon, MoonIcon } from './components/icons'
+import { RefreshIcon, SettingsIcon, PlusIcon, SunIcon, MoonIcon } from './components/icons'
 import { applyTheme, getTheme, type Theme } from './lib/theme'
 import { asOf, todayISO } from './lib/format'
 
@@ -42,7 +41,6 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [payingMortgage, setPayingMortgage] = useState<Mortgage | null>(null)
   const [view, setView] = useState<'dashboard' | 'activity' | 'summary'>('dashboard')
-  const [helpOpen, setHelpOpen] = useState(false)
   const [theme, setThemeState] = useState<Theme>(getTheme)
 
   const toggleTheme = useCallback(() => {
@@ -94,9 +92,6 @@ export default function App() {
       } else if (e.key === 's') {
         e.preventDefault()
         setSettingsOpen(true)
-      } else if (e.key === '?') {
-        e.preventDefault()
-        setHelpOpen(true)
       } else if (e.key === 't') {
         e.preventDefault()
         toggleTheme()
@@ -184,17 +179,9 @@ export default function App() {
           >
             <SettingsIcon />
           </button>
-          <button
-            className="iconbtn"
-            onClick={() => setHelpOpen(true)}
-            aria-label="Help and shortcuts"
-            title="Help & shortcuts (?)"
-          >
-            <HelpIcon />
-          </button>
           {!isEmpty && (
-            <button className="btn-primary" onClick={() => setAdding(true)} title="Add position (A)">
-              <PlusIcon /> Add
+            <button className="btn-primary" onClick={() => setAdding(true)} title="Add position (A)" aria-label="Add position">
+              <PlusIcon /> <span className="btn-label">Add</span>
             </button>
           )}
         </div>
@@ -278,7 +265,6 @@ export default function App() {
         }}
       />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} isEmpty={!!isEmpty} />
-      <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)} />
       <MortgagePaymentSheet
         mortgage={payingMortgage}
         cash={data?.cash ?? []}

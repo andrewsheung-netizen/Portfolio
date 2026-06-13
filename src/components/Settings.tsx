@@ -17,6 +17,22 @@ interface PendingImport {
   fileName: string
 }
 
+const SHORTCUTS: [string, string][] = [
+  ['A', 'Add a position, cash flow, or property'],
+  ['R', 'Refresh live prices'],
+  ['S', 'Open settings'],
+  ['T', 'Toggle light / dark mode'],
+  ['Esc', 'Close any open sheet'],
+]
+
+const TIPS: string[] = [
+  'Dashboard answers “what am I worth and what moved today”. Activity is the full transaction log; Summary totals each category over a date range.',
+  'Buying lets you fund from a cash balance or a fresh injection — net worth only rises on new capital, not on moving cash into holdings.',
+  'Every transaction (buy, sell, option close, mortgage payment, cash move) is reversible from the Activity tab.',
+  'Tap any figure’s HKD/Native or P&L/Day toggle in Holdings to switch what the columns show.',
+  'Everything lives in this browser — export a JSON backup regularly.',
+]
+
 function bundleCounts(b: ExportBundle): Array<[string, number]> {
   return [
     ['equities', b.equities.length],
@@ -282,6 +298,29 @@ export function SettingsSheet({ open, onClose, isEmpty }: Props) {
               {erasing ? (busy ? 'Erasing…' : 'Confirm erase everything') : 'Erase all data'}
             </button>
           </div>
+        </section>
+
+        <section className="settings-section">
+          <h3>Keyboard</h3>
+          <dl className="help-keys">
+            {SHORTCUTS.map(([k, desc]) => (
+              <div key={k} className="help-key-row">
+                <dt>
+                  <kbd className="kbd">{k}</kbd>
+                </dt>
+                <dd>{desc}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        <section className="settings-section">
+          <h3>Good to know</h3>
+          <ul className="help-tips">
+            {TIPS.map((t) => (
+              <li key={t}>{t}</li>
+            ))}
+          </ul>
         </section>
       </div>
     </Sheet>
