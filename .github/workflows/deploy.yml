@@ -28,6 +28,10 @@ jobs:
       - run: npm ci
       - run: npm run build
       - uses: actions/configure-pages@v5
+        with:
+          # Turn Pages on (build type: GitHub Actions) via the API, so deploys
+          # don't depend on the source being toggled manually first.
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
