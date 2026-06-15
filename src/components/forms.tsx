@@ -438,7 +438,9 @@ interface SellTarget {
 
 function SellForm({ target, back, done }: { target: SellTarget; back: () => void; done: () => void }) {
   const [qtyStr, setQtyStr] = useState(String(target.held))
+  const [priceMode, setPriceMode] = useState<'unit' | 'total'>('unit')
   const [priceStr, setPriceStr] = useState(target.currentPrice !== undefined ? String(target.currentPrice) : '')
+  const [totalStr, setTotalStr] = useState('')
   const [date, setDate] = useState(todayISO())
   const [dest, setDest] = useState<string>('')
   const [newLabel, setNewLabel] = useState('')
@@ -465,16 +467,17 @@ function SellForm({ target, back, done }: { target: SellTarget; back: () => void
   }, [cashRows, dest, target.accountId, usdtEligible])
 
   const qty = Number(qtyStr)
-  const salePrice = Number(priceStr)
-  const valid =
-    Number.isFinite(qty) &&
-    qty > 0 &&
-    qty <= target.held &&
-    Number.isFinite(salePrice) &&
-    salePrice >= 0 &&
-    date <= todayISO()
-  const proceeds = valid ? qty * salePrice : null
-  const realized = valid ? (salePrice - target.avgCost) * qty : null
+  const qtyOk = Number.isFinite(qty) && qty > 0 && qty <= target.held
+  // Proceeds can be entered per unit or as the total received; the other derives.
+  const unit = Number(priceStr)
+  const totalIn = Number(totalStr)
+  const proceedsOk =
+    priceMode === 'total' ? Number.isFinite(totalIn) && totalIn >= 0 : Number.isFinite(unit) && unit >= 0
+  const valid = qtyOk && proceedsOk && date <= todayISO()
+  const proceeds = valid ? (priceMode === 'total' ? totalIn : unit * qty) : null
+  // per-unit price recorded on the trade (derived from total when in total mode)
+  const salePrice = qtyOk && qty > 0 ? (priceMode === 'total' ? totalIn / qty : unit) : 0
+  const realized = valid && proceeds !== null ? proceeds - target.avgCost * qty : null
 
   return (
     <form
@@ -548,28 +551,77 @@ function SellForm({ target, back, done }: { target: SellTarget; back: () => void
     >
       <div className="form-grid">
         <Field label="Quantity" hint={`of ${target.held} held`}>
-          <input
-            className="input num"
-            type="number"
-            step="any"
-            min="0"
-            max={target.held}
-            required
-            value={qtyStr}
-            onChange={(e) => setQtyStr(e.target.value)}
-          />
+          <div style={{ display: 'flex', gap: 'var(--s-2)' }}>
+            <input
+              className="input num"
+              type="number"
+              step="any"
+              min="0"
+              max={target.held}
+              required
+              value={qtyStr}
+              onChange={(e) => setQtyStr(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <button
+              type="button"
+              className={`kind-tab${qtyOk && qty === target.held ? ' active' : ''}`}
+              onClick={() => setQtyStr(String(target.held))}
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              All
+            </button>
+          </div>
         </Field>
-        <Field label="Sale price" hint="per unit">
-          <input
-            className="input num"
-            type="number"
-            step="any"
-            min="0"
-            required
-            value={priceStr}
-            onChange={(e) => setPriceStr(e.target.value)}
-          />
-        </Field>
+        <div className="field">
+          <span className="field-label">
+            Proceeds
+            <span className="field-hint"> {target.currency}</span>
+          </span>
+          <div className="kind-tabs" role="group" aria-label="How to enter proceeds" style={{ marginBottom: 'var(--s-2)' }}>
+            <button
+              type="button"
+              aria-pressed={priceMode === 'unit'}
+              className={`kind-tab${priceMode === 'unit' ? ' active' : ''}`}
+              onClick={() => setPriceMode('unit')}
+            >
+              Per unit
+            </button>
+            <button
+              type="button"
+              aria-pressed={priceMode === 'total'}
+              className={`kind-tab${priceMode === 'total' ? ' active' : ''}`}
+              onClick={() => setPriceMode('total')}
+            >
+              Total
+            </button>
+          </div>
+          {priceMode === 'unit' ? (
+            <input
+              className="input num"
+              type="number"
+              step="any"
+              min="0"
+              required
+              value={priceStr}
+              onChange={(e) => setPriceStr(e.target.value)}
+              placeholder="price per unit"
+              aria-label="Sale price per unit"
+            />
+          ) : (
+            <input
+              className="input num"
+              type="number"
+              step="any"
+              min="0"
+              required
+              value={totalStr}
+              onChange={(e) => setTotalStr(e.target.value)}
+              placeholder={`total ${target.currency} received`}
+              aria-label="Total received"
+            />
+          )}
+        </div>
         <Field label="Date">
           <input
             className="input num"
@@ -601,7 +653,10 @@ function SellForm({ target, back, done }: { target: SellTarget; back: () => void
       <p className="sell-preview" aria-live="polite">
         {valid && proceeds !== null && realized !== null ? (
           <>
-            Proceeds <span className="num">{money(proceeds, target.currency)}</span> · Realized{' '}
+            Proceeds <span className="num">{money(proceeds, target.currency)}</span>
+            {' · @ '}
+            <span className="num">{money(salePrice, target.currency)}</span>
+            {priceMode === 'total' ? '/unit' : ''} · Realized{' '}
             <span className={`num ${realized > 0 ? 'gain' : realized < 0 ? 'loss' : ''}`}>
               {signedMoney(realized, target.currency)}
             </span>
@@ -611,7 +666,7 @@ function SellForm({ target, back, done }: { target: SellTarget; back: () => void
         ) : date > todayISO() ? (
           'Sale date can’t be in the future.'
         ) : (
-          'Enter quantity and sale price to preview.'
+          'Enter quantity and proceeds to preview.'
         )}
       </p>
 
