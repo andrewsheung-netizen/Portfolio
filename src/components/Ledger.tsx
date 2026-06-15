@@ -153,10 +153,10 @@ export function Ledger({ data, onEdit, dayByKey }: Props) {
         head={
           <tr>
             <th scope="col">Position</th>
-            <th scope="col" className="num-col">Qty</th>
+            <th scope="col" className="num-col col-md">Qty</th>
             <th scope="col" className="num-col col-md">Price</th>
             <th scope="col" className="num-col">Value</th>
-            <th scope="col" className="num-col col-md">{dayMode ? 'Day' : 'P&L'}</th>
+            <th scope="col" className="num-col">{dayMode ? 'Day' : 'P&L'}</th>
           </tr>
         }
       >
@@ -183,7 +183,7 @@ export function Ledger({ data, onEdit, dayByKey }: Props) {
                   <span className="pos-name">{p.name}</span>
                 </button>
               </td>
-              <td className="num num-col">{quantity(p.quantity)}</td>
+              <td className="num num-col col-md">{quantity(p.quantity)}</td>
               <td className="num num-col col-md">
                 {p.price !== undefined ? (
                   <>
@@ -197,7 +197,7 @@ export function Ledger({ data, onEdit, dayByKey }: Props) {
                 )}
               </td>
               <td className={`num num-col${v.missing ? ' cell-missing' : ''}`}>{v.text}</td>
-              <td className="num num-col col-md">
+              <td className="num num-col">
                 {dayMode ? (
                   <DayCell value={dayByKey?.get(equityKey(p))} />
                 ) : pnlBase !== null ? (
@@ -223,9 +223,9 @@ export function Ledger({ data, onEdit, dayByKey }: Props) {
           <tr>
             <th scope="col">Contract</th>
             <th scope="col" className="num-col col-md">Mark</th>
-            <th scope="col" className="num-col">Expiry</th>
+            <th scope="col" className="num-col col-md">Expiry</th>
             <th scope="col" className="num-col">Value</th>
-            <th scope="col" className="num-col col-md">{dayMode ? 'Day' : 'P&L'}</th>
+            <th scope="col" className="num-col">{dayMode ? 'Day' : 'P&L'}</th>
           </tr>
         }
       >
@@ -269,13 +269,13 @@ export function Ledger({ data, onEdit, dayByKey }: Props) {
                   <span className="cell-missing">no mark</span>
                 )}
               </td>
-              <td className="num num-col">
+              <td className="num num-col col-md">
                 <span className={dte < 0 ? 'loss' : dte <= 14 ? 'dte-warn' : undefined}>
                   {dte < 0 ? 'expired' : `${dte}d`}
                 </span>
               </td>
               <td className={`num num-col${v.missing ? ' cell-missing' : ''}`}>{v.text}</td>
-              <td className="num num-col col-md">
+              <td className="num num-col">
                 {dayMode ? (
                   <DayCell value={dayByKey?.get(optionKey(p))} />
                 ) : pnlBase !== null ? (
@@ -300,10 +300,10 @@ export function Ledger({ data, onEdit, dayByKey }: Props) {
         head={
           <tr>
             <th scope="col">Asset</th>
-            <th scope="col" className="num-col">Qty</th>
+            <th scope="col" className="num-col col-md">Qty</th>
             <th scope="col" className="num-col col-md">Price</th>
             <th scope="col" className="num-col">Value</th>
-            <th scope="col" className="num-col col-md">{dayMode ? 'Day' : 'P&L'}</th>
+            <th scope="col" className="num-col">{dayMode ? 'Day' : 'P&L'}</th>
           </tr>
         }
       >
@@ -330,12 +330,12 @@ export function Ledger({ data, onEdit, dayByKey }: Props) {
                   <span className="pos-name">{p.name}</span>
                 </button>
               </td>
-              <td className="num num-col">{quantity(p.quantity)}</td>
+              <td className="num num-col col-md">{quantity(p.quantity)}</td>
               <td className="num num-col col-md">
                 {p.price !== undefined ? price(p.price, 'USD') : <span className="cell-missing">no price</span>}
               </td>
               <td className={`num num-col${v.missing ? ' cell-missing' : ''}`}>{v.text}</td>
-              <td className="num num-col col-md">
+              <td className="num num-col">
                 {dayMode ? (
                   <DayCell value={dayByKey?.get(cryptoKey(p))} />
                 ) : pnlBase !== null ? (
