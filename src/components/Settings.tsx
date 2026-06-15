@@ -59,6 +59,8 @@ async function downloadCurrentData(prefix: string): Promise<void> {
 export function SettingsSheet({ open, onClose, isEmpty }: Props) {
   const [apiKey, setApiKey] = useState('')
   const [keySaved, setKeySaved] = useState(false)
+  const [proxyUrl, setProxyUrl] = useState('')
+  const [proxySaved, setProxySaved] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
   const [importOk, setImportOk] = useState(false)
   const [pending, setPending] = useState<PendingImport | null>(null)
@@ -88,6 +90,7 @@ export function SettingsSheet({ open, onClose, isEmpty }: Props) {
       setPending(null)
       setErasing(false)
       void getSetting('fmpApiKey').then((v) => setApiKey(v ?? ''))
+      void getSetting('quoteProxyUrl').then((v) => setProxyUrl(v ?? ''))
     }
   }, [open])
 
@@ -95,6 +98,12 @@ export function SettingsSheet({ open, onClose, isEmpty }: Props) {
     await setSetting('fmpApiKey', apiKey.trim())
     setKeySaved(true)
     setTimeout(() => setKeySaved(false), 1600)
+  }
+
+  const saveProxy = async () => {
+    await setSetting('quoteProxyUrl', proxyUrl.trim())
+    setProxySaved(true)
+    setTimeout(() => setProxySaved(false), 1600)
   }
 
   /** Stage 1: read and validate the file; nothing is touched yet. */
@@ -149,8 +158,30 @@ export function SettingsSheet({ open, onClose, isEmpty }: Props) {
         <section className="settings-section">
           <h3>Live prices</h3>
           <p className="settings-note">
-            Crypto and FX rates update automatically — no key needed. Add a Financial Modeling Prep key for live
-            equity prices; it's stored only on this device. Option marks stay manual.
+            Crypto and FX rates update automatically — no key needed. For live equity prices, set either source below
+            (both stored only on this device). Option marks stay manual.
+          </p>
+          <p className="settings-note">
+            <strong>Quotes proxy</strong> — keyless, covers the broad market (incl. HK and small-caps). Deploy the
+            free Cloudflare Worker in <span className="num">worker/</span>, then paste its URL here.
+          </p>
+          <div className="settings-row">
+            <input
+              className="input num"
+              type="url"
+              value={proxyUrl}
+              onChange={(e) => setProxyUrl(e.target.value)}
+              placeholder="https://portfolio-quotes.you.workers.dev"
+              autoComplete="off"
+              aria-label="Quotes proxy URL"
+            />
+            <button className="btn-primary" onClick={() => void saveProxy()} aria-live="polite">
+              {proxySaved ? 'Saved' : 'Save'}
+            </button>
+          </div>
+          <p className="settings-note">
+            <strong>FMP key</strong> — optional; fills any symbol the proxy can't price (free tier excludes some
+            exchanges).
           </p>
           <div className="settings-row">
             <input

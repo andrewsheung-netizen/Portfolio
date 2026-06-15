@@ -66,7 +66,7 @@ export function ActionStrip({ flags, refresh, onOpenSettings, onEdit, onRetry }:
     items.push({
       key: 'no-key',
       tone: 'muted',
-      text: 'Live prices are off — add a FMP API key to refresh automatically',
+      text: 'Live equity prices are off — add a quotes proxy or FMP key in Settings',
       action: onOpenSettings,
       actionLabel: 'Settings',
     })

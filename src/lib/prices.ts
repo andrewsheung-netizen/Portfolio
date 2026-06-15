@@ -61,18 +61,33 @@ export interface QuoteLookup {
  * treat null as "couldn't autofill" and leave the fields for manual entry.
  */
 export async function lookupQuote(symbol: string): Promise<QuoteLookup | null> {
+  const sym = symbol.trim()
+  if (!sym) return null
   const key = (await getSetting('fmpApiKey'))?.trim()
-  if (!key || !symbol.trim()) return null
-  try {
-    const res = await fetch(`${FMP}/quote/${encodeURIComponent(symbol.trim())}?apikey=${encodeURIComponent(key)}`)
-    if (!res.ok) return null
-    const rows = (await res.json()) as FmpQuote[]
-    const r = rows?.[0]
-    if (!r || typeof r.price !== 'number' || !Number.isFinite(r.price)) return null
-    return { name: r.name ?? '', price: r.price }
-  } catch {
-    return null
+  // FMP first when configured — it returns the company name too.
+  if (key) {
+    try {
+      const res = await fetch(`${FMP}/quote/${encodeURIComponent(sym)}?apikey=${encodeURIComponent(key)}`)
+      if (res.ok) {
+        const rows = (await res.json()) as FmpQuote[]
+        const r = rows?.[0]
+        if (r && typeof r.price === 'number' && Number.isFinite(r.price)) return { name: r.name ?? '', price: r.price }
+      }
+    } catch {
+      // fall through to the proxy
+    }
   }
+  // Keyless fallback via the Yahoo proxy — price only (no name).
+  const proxyUrl = (await getSetting('quoteProxyUrl'))?.trim()
+  if (proxyUrl) {
+    try {
+      const price = (await yahooQuotes([sym], proxyUrl)).get(sym)
+      if (price !== undefined) return { name: '', price }
+    } catch {
+      // give up — caller leaves the fields for manual entry
+    }
+  }
+  return null
 }
 
 async function fmpQuotes(symbols: string[], key: string): Promise<Map<string, number>> {
@@ -114,6 +129,28 @@ async function fmpQuoteOne(symbol: string, key: string): Promise<number | null> 
     }
   }
   return null
+}
+
+/**
+ * Equity quotes via a user-deployed Yahoo proxy (a Cloudflare Worker — see
+ * worker/). Keyless and covers exchanges/symbols FMP's free tier won't. The
+ * worker returns `{ SYMBOL: { price, currency } }`; symbols it can't price are
+ * simply absent. Throws on network/non-OK so the caller can fall back to FMP.
+ */
+async function yahooQuotes(symbols: string[], proxyUrl: string): Promise<Map<string, number>> {
+  const out = new Map<string, number>()
+  if (symbols.length === 0) return out
+  const base = proxyUrl.replace(/\/+$/, '')
+  for (let i = 0; i < symbols.length; i += 50) {
+    const batch = symbols.slice(i, i + 50)
+    const res = await fetch(`${base}/?symbols=${encodeURIComponent(batch.join(','))}`)
+    if (!res.ok) throw new Error(`Quotes proxy ${res.status}`)
+    const data = (await res.json()) as Record<string, { price?: number } | undefined>
+    for (const [sym, q] of Object.entries(data)) {
+      if (q && typeof q.price === 'number' && Number.isFinite(q.price)) out.set(sym, q.price)
+    }
+  }
+  return out
 }
 
 // Keyless, CORS-enabled FX feed (USD-based; we derive cross-rates to HKD).
@@ -167,6 +204,7 @@ export async function currenciesInUse(): Promise<Currency[]> {
  */
 export async function refreshAll(): Promise<RefreshResult> {
   const key = (await getSetting('fmpApiKey'))?.trim()
+  const proxyUrl = (await getSetting('quoteProxyUrl'))?.trim()
   const failed: string[] = []
   let updated = 0
   const now = Date.now()
@@ -208,27 +246,39 @@ export async function refreshAll(): Promise<RefreshResult> {
     }
   }
 
-  // --- Equities: FMP, needs a key ---
-  if (key) {
-    const equities = await db.equities.toArray()
+  // --- Equities: Yahoo proxy (keyless) primary, FMP fills any gaps ---
+  const equities = await db.equities.toArray()
+  if (equities.length > 0 && (key || proxyUrl)) {
     const equitySymbols = [...new Set(equities.map((p) => p.ticker))]
-    // Try the efficient batch first; if it throws (one unsupported ticker can
-    // poison the whole request), fall through and quote the rest individually.
     const eq = new Map<string, number>()
-    try {
-      for (const [s, p] of await fmpQuotes(equitySymbols, key)) eq.set(s, p)
-    } catch {
-      // batch failed wholesale — per-symbol fallback below recovers the rest
+
+    // 1. The proxy covers the broad market keyless, including HK/small-caps.
+    if (proxyUrl) {
+      try {
+        for (const [s, p] of await yahooQuotes(equitySymbols, proxyUrl)) eq.set(s, p)
+      } catch {
+        // proxy unreachable — FMP fallback below still runs
+      }
     }
-    // Any symbol the batch didn't return: quote it on its own so supported
-    // tickers still update and only the genuinely uncovered ones get flagged.
-    const missing = equitySymbols.filter((s) => !eq.has(s))
-    await Promise.all(
-      missing.map(async (s) => {
-        const p = await fmpQuoteOne(s, key)
-        if (p !== null) eq.set(s, p)
-      }),
-    )
+
+    // 2. FMP fills anything the proxy didn't price (batch, then per-symbol so
+    //    one unsupported ticker can't poison the rest).
+    let missing = equitySymbols.filter((s) => !eq.has(s))
+    if (missing.length > 0 && key) {
+      try {
+        for (const [s, p] of await fmpQuotes(missing, key)) eq.set(s, p)
+      } catch {
+        // batch failed wholesale — per-symbol fallback below recovers the rest
+      }
+      missing = equitySymbols.filter((s) => !eq.has(s))
+      await Promise.all(
+        missing.map(async (s) => {
+          const p = await fmpQuoteOne(s, key)
+          if (p !== null) eq.set(s, p)
+        }),
+      )
+    }
+
     for (const p of equities) {
       const price = eq.get(p.ticker)
       if (price !== undefined) {
@@ -245,7 +295,7 @@ export async function refreshAll(): Promise<RefreshResult> {
   return {
     updated,
     failed: [...new Set(failed)],
-    noKey: !key,
+    noKey: !key && !proxyUrl,
     optionsNote: (await db.options.count()) > 0 ? 'Option marks are manual — edit a position to update its mark.' : undefined,
     at: now,
   }
