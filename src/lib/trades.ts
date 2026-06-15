@@ -2,6 +2,40 @@ import { db } from './db'
 import { captureSnapshot } from './prices'
 import type { CashFlow, MortgagePayment, Trade } from './types'
 
+/** The reserve is a crypto holding symbol — USDT, treated as $1. */
+export const USDT_SYMBOL = 'USDT'
+
+/** Current USDT reserve quantity (≈ USD), 0 if none exists. */
+export async function usdtReserveQty(): Promise<number> {
+  const row = (await db.cryptos.toArray()).find((c) => c.symbol === USDT_SYMBOL)
+  return row?.quantity ?? 0
+}
+
+/**
+ * Add (deltaQty > 0) or remove (deltaQty < 0) USDT from the reserve holding,
+ * creating it on first credit and deleting it when it empties. Must run inside a
+ * transaction whose scope includes db.cryptos.
+ */
+export async function adjustUsdtReserve(deltaQty: number, accountId?: number): Promise<void> {
+  const existing = (await db.cryptos.toArray()).find((c) => c.symbol === USDT_SYMBOL)
+  if (existing?.id) {
+    const q = existing.quantity + deltaQty
+    if (q <= 1e-9) await db.cryptos.delete(existing.id)
+    else await db.cryptos.update(existing.id, { quantity: q })
+  } else if (deltaQty > 0) {
+    await db.cryptos.add({
+      symbol: USDT_SYMBOL,
+      name: 'Tether USD',
+      quantity: deltaQty,
+      avgCost: 1,
+      price: 1,
+      priceUpdatedAt: Date.now(),
+      priceSource: 'manual',
+      accountId,
+    })
+  }
+}
+
 /**
  * Reverse a recorded trade atomically:
  *   1. undo its cash movement (skipped when the trade didn't touch cash)
@@ -15,8 +49,11 @@ export async function undoTrade(t: Trade): Promise<void> {
   const now = Date.now()
 
   await db.transaction('rw', [db.equities, db.cryptos, db.options, db.cash, db.trades], async () => {
-    // 1. reverse the cash movement (only if there was one)
-    if (cashDelta !== 0) {
+    // 1. reverse the settlement movement (only if there was one)
+    if (t.reserve === 'usdt') {
+      // proceeds were added to (sell) / drawn from (buy) the USDT reserve
+      if (cashDelta !== 0) await adjustUsdtReserve(-cashDelta)
+    } else if (cashDelta !== 0) {
       const byId = t.cashId !== undefined ? await db.cash.get(t.cashId) : undefined
       const cashRow = byId ?? (await db.cash.toArray()).find((c) => c.label === t.cashLabel && c.currency === t.currency)
       if (!cashRow?.id) {

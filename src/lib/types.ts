@@ -182,8 +182,14 @@ export interface Trade {
   currency: Currency
   /** signed cash movement: positive credited the cash balance, negative debited it */
   cashDelta: number
-  /** how a buy was funded: 'cash' from a balance, 'injection' = fresh external capital */
-  funded?: 'cash' | 'injection'
+  /** how a buy was funded: 'cash' from a balance, 'injection' = fresh capital, 'usdt' = the USDT reserve */
+  funded?: 'cash' | 'injection' | 'usdt'
+  /**
+   * Set when a crypto trade settles against the USDT reserve (a crypto holding)
+   * instead of a cash balance: a sell adds proceeds to it, a buy draws from it.
+   * `cashDelta` is the signed USD amount moved; `cashId` is absent.
+   */
+  reserve?: 'usdt'
   /** the cash balance the trade settled against */
   cashId?: number
   cashLabel: string

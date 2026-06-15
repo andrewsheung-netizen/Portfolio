@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../lib/db'
 import { paymentsElapsed } from '../lib/compute'
 import { captureSnapshot, lookupQuote } from '../lib/prices'
+import { adjustUsdtReserve, USDT_SYMBOL } from '../lib/trades'
 import type {
   Account,
   CashBalance,
@@ -230,15 +231,18 @@ async function resolveAccount(name: string, kind: Account['kind'], currency: Cur
   return (await db.accounts.add({ name: trimmed, kind, currency })) as number
 }
 
-/** Funding choice for a new equity/crypto: existing holding, fresh capital, or a cash account. */
+/** Funding choice for a new equity/crypto: existing holding, fresh capital, the USDT reserve, or a cash account. */
 function FundingField({
   currency,
   value,
   onChange,
+  usdtAvail,
 }: {
   currency: Currency
   value: string
   onChange: (v: string) => void
+  /** when defined, offer "Buy from USDT reserve" (crypto only); the number is what's available */
+  usdtAvail?: number
 }) {
   const cashRows = useLiveQuery(
     () => db.cash.toArray().then((rows) => rows.filter((c) => c.currency === currency && c.id !== undefined)),
@@ -249,6 +253,9 @@ function FundingField({
       <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="existing">Already owned — no cash change</option>
         <option value="injection">Buy with fresh injection</option>
+        {usdtAvail !== undefined && usdtAvail > 0 && (
+          <option value="usdt">Buy from USDT reserve ({money(usdtAvail, 'USD')})</option>
+        )}
         {(cashRows ?? []).map((c) => (
           <option key={c.id} value={`cash-${c.id}`}>
             Buy from {c.label}
@@ -279,10 +286,11 @@ async function writeBuy(p: {
 }): Promise<void> {
   const { assetType, symbol, name, quantity, cost, price, currency, accountId, funding } = p
   const cashId = funding.startsWith('cash-') ? Number(funding.replace('cash-', '')) : null
+  const fromUsdt = funding === 'usdt'
   const total = cost * quantity
   const table = assetType === 'equity' ? db.equities : db.cryptos
 
-  await db.transaction('rw', [table, db.cash, db.trades], async () => {
+  await db.transaction('rw', [db.equities, db.cryptos, db.cash, db.trades], async () => {
     // merge into an existing holding or create a new one
     const rows = await table.toArray()
     const existing =
@@ -300,6 +308,34 @@ async function writeBuy(p: {
     }
 
     if (funding === 'existing') return // not a logged purchase
+
+    // Funded from the USDT reserve: draw the cost down from it instead of cash.
+    if (fromUsdt) {
+      const have = (await db.cryptos.toArray()).find((c) => c.symbol === USDT_SYMBOL)?.quantity ?? 0
+      if (have + 1e-9 < total) {
+        throw new Error(`Not enough USDT — reserve holds ${have}, this buy needs ${total}`)
+      }
+      await adjustUsdtReserve(-total, accountId)
+      const trade: Omit<Trade, 'id'> = {
+        kind: 'buy',
+        assetType,
+        symbol,
+        name,
+        quantity,
+        price: cost,
+        costBasis: cost,
+        realized: 0,
+        currency,
+        cashDelta: -total,
+        funded: 'usdt',
+        reserve: 'usdt',
+        cashLabel: USDT_SYMBOL,
+        accountId,
+        at: Date.now(),
+      }
+      await db.trades.add(trade)
+      return
+    }
 
     let cashLabel = ''
     if (cashId !== null) {
@@ -336,12 +372,14 @@ function FormButtons({
   onSell,
   sellLabel,
   busy = false,
+  submitDisabled = false,
 }: {
   isEdit: boolean
   onDelete?: () => void
   onSell?: () => void
   sellLabel?: string
   busy?: boolean
+  submitDisabled?: boolean
 }) {
   const [confirming, setConfirming] = useState(false)
   return (
@@ -367,11 +405,11 @@ function FormButtons({
         </button>
       )}
       {!isEdit && (
-        <button type="submit" name="again" className="btn-ghost" disabled={busy}>
+        <button type="submit" name="again" className="btn-ghost" disabled={busy || submitDisabled}>
           Add & next
         </button>
       )}
-      <button type="submit" className="btn-primary" disabled={busy}>
+      <button type="submit" className="btn-primary" disabled={busy || submitDisabled}>
         {busy ? 'Saving…' : isEdit ? 'Save' : 'Add'}
       </button>
     </div>
@@ -411,12 +449,20 @@ function SellForm({ target, back, done }: { target: SellTarget; back: () => void
     [target.currency],
   )
 
-  // default destination: same account's cash row, else first same-currency row, else new
+  // Crypto proceeds settle into the USDT reserve by default (not fiat cash).
+  const usdtEligible = target.assetType === 'crypto' && target.symbol !== USDT_SYMBOL
+
+  // default destination: USDT reserve for crypto, else same account's cash row,
+  // else first same-currency row, else new
   useEffect(() => {
     if (dest !== '' || cashRows === undefined) return
+    if (usdtEligible) {
+      setDest('usdt')
+      return
+    }
     const sameAccount = cashRows.find((c) => c.accountId === target.accountId)
     setDest(sameAccount?.id ? `cash-${sameAccount.id}` : cashRows[0]?.id ? `cash-${cashRows[0].id}` : 'new')
-  }, [cashRows, dest, target.accountId])
+  }, [cashRows, dest, target.accountId, usdtEligible])
 
   const qty = Number(qtyStr)
   const salePrice = Number(priceStr)
@@ -451,10 +497,15 @@ function SellForm({ target, back, done }: { target: SellTarget; back: () => void
             else await db.cryptos.update(target.id, { quantity: target.held - qty })
           }
 
-          // 2. credit the proceeds to cash
+          // 2. credit the proceeds — to the USDT reserve (crypto) or a cash balance
           let cashLabel: string
-          let cashId: number
-          if (dest === 'new') {
+          let cashId: number | undefined
+          let reserve: 'usdt' | undefined
+          if (dest === 'usdt') {
+            await adjustUsdtReserve(proceeds, target.accountId)
+            cashLabel = USDT_SYMBOL
+            reserve = 'usdt'
+          } else if (dest === 'new') {
             cashLabel = newLabel.trim()
             cashId = (await db.cash.add({
               label: cashLabel,
@@ -483,6 +534,7 @@ function SellForm({ target, back, done }: { target: SellTarget; back: () => void
             realized,
             currency: target.currency,
             cashDelta: proceeds,
+            reserve,
             cashId,
             cashLabel,
             accountId: target.accountId,
@@ -530,6 +582,7 @@ function SellForm({ target, back, done }: { target: SellTarget; back: () => void
         </Field>
         <Field label="Proceeds to" hint={target.currency}>
           <select className="input" value={dest} onChange={(e) => setDest(e.target.value)}>
+            {usdtEligible && <option value="usdt">USDT reserve</option>}
             {(cashRows ?? []).map((c) => (
               <option key={c.id} value={`cash-${c.id}`}>
                 {c.label}
@@ -1086,6 +1139,13 @@ function CryptoForm({
   const [funding, setFunding] = useState('existing')
   const [looking, setLooking] = useState(false)
 
+  // USDT reserve, for funding a buy from it. Not offered when adding USDT itself.
+  const usdtAvail =
+    useLiveQuery(() => db.cryptos.toArray().then((r) => r.find((c) => c.symbol === USDT_SYMBOL)?.quantity ?? 0), []) ?? 0
+  const buyingUsdt = symbol.trim().toUpperCase() === USDT_SYMBOL
+  const buyTotal = (num(avgCost) || 0) * (num(qty) || 0)
+  const usdtShort = funding === 'usdt' && buyTotal > usdtAvail + 1e-9
+
   // Crypto quotes on FMP are keyed SYMBOLUSD (e.g. BTCUSD).
   const lookupSymbol = async () => {
     const sym = symbol.trim().toUpperCase()
@@ -1126,7 +1186,7 @@ function CryptoForm({
       className="form"
       onSubmit={(e) => {
         e.preventDefault()
-        if (!(num(qty) > 0)) return
+        if (!(num(qty) > 0) || usdtShort) return
         const again = submittedAgain(e)
         void guard(async () => {
           const accountId = await resolveAccount(account, 'wallet', 'USD')
@@ -1184,12 +1244,25 @@ function CryptoForm({
         <Field label="Price" hint="USD, manual">
           <input className="input num" type="number" step="any" min="0" value={priceStr} onChange={(e) => setPriceStr(e.target.value)} />
         </Field>
-        {!row && <FundingField currency="USD" value={funding} onChange={setFunding} />}
+        {!row && (
+          <FundingField
+            currency="USD"
+            value={funding}
+            onChange={setFunding}
+            usdtAvail={buyingUsdt ? undefined : usdtAvail}
+          />
+        )}
         <AccountField accounts={accounts} value={account} onChange={setAccount} />
       </div>
+      {usdtShort && (
+        <p className="sell-preview" aria-live="polite">
+          Not enough USDT — reserve holds {money(usdtAvail, 'USD')}, this buy needs {money(buyTotal, 'USD')}.
+        </p>
+      )}
       <FormButtons
         isEdit={!!row}
         busy={busy}
+        submitDisabled={usdtShort}
         onSell={
           row?.id
             ? () => {
