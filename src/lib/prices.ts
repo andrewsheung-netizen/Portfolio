@@ -4,6 +4,9 @@ import { todayISO } from './format'
 import { BASE_CURRENCY, type Currency } from './types'
 
 const FMP = 'https://financialmodelingprep.com/api/v3'
+// FMP's newer "stable" endpoint — used as a per-symbol fallback when the legacy
+// v3 path fails (some keys/plans only serve one or the other).
+const FMP_STABLE = 'https://financialmodelingprep.com/stable/quote'
 // Binance's public market-data host: keyless, CORS-enabled, and (unlike
 // api.binance.com) not geo-restricted.
 const BINANCE = 'https://data-api.binance.vision/api/v3'
@@ -86,6 +89,31 @@ async function fmpQuotes(symbols: string[], key: string): Promise<Map<string, nu
     }
   }
   return out
+}
+
+/**
+ * Quote a single symbol, isolated so one bad ticker can't fail the others.
+ * Tries the legacy v3 endpoint, then FMP's "stable" endpoint. Returns null when
+ * the symbol isn't covered (e.g. an exchange the plan doesn't include) or the
+ * request fails — the caller flags just that ticker, not the whole batch.
+ */
+async function fmpQuoteOne(symbol: string, key: string): Promise<number | null> {
+  const urls = [
+    `${FMP}/quote/${encodeURIComponent(symbol)}?apikey=${encodeURIComponent(key)}`,
+    `${FMP_STABLE}?symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(key)}`,
+  ]
+  for (const url of urls) {
+    try {
+      const res = await fetch(url)
+      if (!res.ok) continue
+      const rows = (await res.json()) as FmpQuote[]
+      const p = rows?.[0]?.price
+      if (typeof p === 'number' && Number.isFinite(p)) return p
+    } catch {
+      // try the next endpoint
+    }
+  }
+  return null
 }
 
 // Keyless, CORS-enabled FX feed (USD-based; we derive cross-rates to HKD).
@@ -184,18 +212,29 @@ export async function refreshAll(): Promise<RefreshResult> {
   if (key) {
     const equities = await db.equities.toArray()
     const equitySymbols = [...new Set(equities.map((p) => p.ticker))]
-    let eq = new Map<string, number>()
+    // Try the efficient batch first; if it throws (one unsupported ticker can
+    // poison the whole request), fall through and quote the rest individually.
+    const eq = new Map<string, number>()
     try {
-      eq = await fmpQuotes(equitySymbols, key)
+      for (const [s, p] of await fmpQuotes(equitySymbols, key)) eq.set(s, p)
     } catch {
-      failed.push('equities')
+      // batch failed wholesale — per-symbol fallback below recovers the rest
     }
+    // Any symbol the batch didn't return: quote it on its own so supported
+    // tickers still update and only the genuinely uncovered ones get flagged.
+    const missing = equitySymbols.filter((s) => !eq.has(s))
+    await Promise.all(
+      missing.map(async (s) => {
+        const p = await fmpQuoteOne(s, key)
+        if (p !== null) eq.set(s, p)
+      }),
+    )
     for (const p of equities) {
       const price = eq.get(p.ticker)
       if (price !== undefined) {
         await db.equities.update(p.id!, { price, priceUpdatedAt: now, priceSource: 'live' })
         updated++
-      } else if (equitySymbols.includes(p.ticker) && eq.size > 0) {
+      } else {
         failed.push(p.ticker)
       }
     }
