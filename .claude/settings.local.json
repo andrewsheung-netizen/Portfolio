@@ -45,7 +45,8 @@
       "Bash(echo \"dev index has root div: $\\(curl -s http://localhost:5173/)",
       "Bash(git add *)",
       "Bash(git -c core.autocrlf=false commit -q -m 'Crypto prices: live keyless feed from Binance \\(data-api.binance.vision\\) *)",
-      "Bash(git -c core.autocrlf=false commit -q -m 'Holdings: show P&L/Day column on mobile \\(hide Qty/Price/Expiry instead\\) *)"
+      "Bash(git -c core.autocrlf=false commit -q -m 'Holdings: show P&L/Day column on mobile \\(hide Qty/Price/Expiry instead\\) *)",
+      "Bash(git commit -q -m 'Buy form: enter cost per unit or as total paid \\(like sell\\) *)"
     ]
   }
 }

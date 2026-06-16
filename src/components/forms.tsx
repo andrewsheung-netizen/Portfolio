@@ -266,6 +266,84 @@ function FundingField({
   )
 }
 
+/** Cost entry that toggles between a per-unit price and the total amount paid. */
+function CostField({
+  mode,
+  onMode,
+  unitStr,
+  onUnit,
+  totalStr,
+  onTotal,
+  unitHint,
+  currency,
+  derived,
+}: {
+  mode: 'unit' | 'total'
+  onMode: (m: 'unit' | 'total') => void
+  unitStr: string
+  onUnit: (v: string) => void
+  totalStr: string
+  onTotal: (v: string) => void
+  unitHint: string
+  currency: Currency
+  derived?: string
+}) {
+  return (
+    <div className="field">
+      <span className="field-label">
+        Avg cost<span className="field-hint"> {mode === 'unit' ? unitHint : `total ${currency} paid`}</span>
+      </span>
+      <div className="kind-tabs" role="group" aria-label="How to enter cost" style={{ marginBottom: 'var(--s-2)' }}>
+        <button
+          type="button"
+          aria-pressed={mode === 'unit'}
+          className={`kind-tab${mode === 'unit' ? ' active' : ''}`}
+          onClick={() => onMode('unit')}
+        >
+          Per unit
+        </button>
+        <button
+          type="button"
+          aria-pressed={mode === 'total'}
+          className={`kind-tab${mode === 'total' ? ' active' : ''}`}
+          onClick={() => onMode('total')}
+        >
+          Total
+        </button>
+      </div>
+      {mode === 'unit' ? (
+        <input
+          className="input num"
+          type="number"
+          step="any"
+          min="0"
+          required
+          value={unitStr}
+          onChange={(e) => onUnit(e.target.value)}
+          aria-label="Cost per unit"
+        />
+      ) : (
+        <input
+          className="input num"
+          type="number"
+          step="any"
+          min="0"
+          required
+          value={totalStr}
+          onChange={(e) => onTotal(e.target.value)}
+          placeholder={`total ${currency} paid`}
+          aria-label="Total cost paid"
+        />
+      )}
+      {derived && (
+        <span className="field-hint" style={{ marginTop: 'var(--s-1)' }}>
+          {derived}
+        </span>
+      )}
+    </div>
+  )
+}
+
 /**
  * Record a purchase: blend into an existing same-symbol holding (or create one),
  * optionally debit a cash account, and log a 'buy' trade. For funding 'existing'
@@ -886,12 +964,19 @@ function EquityForm({
   const [ticker, setTicker] = useState(row?.ticker ?? '')
   const [name, setName] = useState(row?.name ?? '')
   const [qty, setQty] = useState(row ? String(row.quantity) : '')
+  const [costMode, setCostMode] = useState<'unit' | 'total'>('unit')
   const [avgCost, setAvgCost] = useState(row ? String(row.avgCost) : '')
+  const [totalCost, setTotalCost] = useState('')
   const [currency, setCurrency] = useState<Currency>(row?.currency ?? 'USD')
   const [priceStr, setPriceStr] = useState(row?.price !== undefined ? String(row.price) : '')
   const [account, setAccount] = useState(accounts.find((a) => a.id === row?.accountId)?.name ?? '')
   const [funding, setFunding] = useState('existing')
   const [looking, setLooking] = useState(false)
+
+  // Per-unit cost, derived from the total paid when entering cost as a total.
+  const unitCost = costMode === 'total' ? (num(qty) > 0 ? num(totalCost) / num(qty) : 0) : num(avgCost)
+  const costDerived =
+    costMode === 'total' && num(qty) > 0 && totalCost.trim() !== '' ? `= ${money(unitCost, currency)} / share` : undefined
 
   // Autofill name + market price from the ticker (when an FMP key is set).
   const lookupTicker = async () => {
@@ -945,7 +1030,7 @@ function EquityForm({
               ticker: sym,
               name: nm,
               quantity: num(qty),
-              avgCost: num(avgCost),
+              avgCost: unitCost,
               currency,
               accountId,
               price: manualPrice ?? row.price,
@@ -958,8 +1043,8 @@ function EquityForm({
               symbol: sym,
               name: nm,
               quantity: num(qty),
-              cost: num(avgCost),
-              price: manualPrice ?? num(avgCost),
+              cost: unitCost,
+              price: manualPrice ?? unitCost,
               currency,
               accountId,
               funding,
@@ -986,9 +1071,17 @@ function EquityForm({
         <Field label="Quantity">
           <input className="input num" type="number" step="any" min="0" required value={qty} onChange={(e) => setQty(e.target.value)} />
         </Field>
-        <Field label="Avg cost" hint="per share">
-          <input className="input num" type="number" step="any" min="0" required value={avgCost} onChange={(e) => setAvgCost(e.target.value)} />
-        </Field>
+        <CostField
+          mode={costMode}
+          onMode={setCostMode}
+          unitStr={avgCost}
+          onUnit={setAvgCost}
+          totalStr={totalCost}
+          onTotal={setTotalCost}
+          unitHint="per share"
+          currency={currency}
+          derived={costDerived}
+        />
         <Field label="Currency">
           <CurrencySelect value={currency} onChange={setCurrency} />
         </Field>
@@ -1188,17 +1281,24 @@ function CryptoForm({
   const [symbol, setSymbol] = useState(row?.symbol ?? '')
   const [name, setName] = useState(row?.name ?? '')
   const [qty, setQty] = useState(row ? String(row.quantity) : '')
+  const [costMode, setCostMode] = useState<'unit' | 'total'>('unit')
   const [avgCost, setAvgCost] = useState(row ? String(row.avgCost) : '')
+  const [totalCost, setTotalCost] = useState('')
   const [priceStr, setPriceStr] = useState(row?.price !== undefined ? String(row.price) : '')
   const [account, setAccount] = useState(accounts.find((a) => a.id === row?.accountId)?.name ?? '')
   const [funding, setFunding] = useState('existing')
   const [looking, setLooking] = useState(false)
 
+  // Per-unit cost, derived from the total paid when entering cost as a total.
+  const unitCost = costMode === 'total' ? (num(qty) > 0 ? num(totalCost) / num(qty) : 0) : num(avgCost)
+  const costDerived =
+    costMode === 'total' && num(qty) > 0 && totalCost.trim() !== '' ? `= ${money(unitCost, 'USD')} / unit` : undefined
+
   // USDT reserve, for funding a buy from it. Not offered when adding USDT itself.
   const usdtAvail =
     useLiveQuery(() => db.cryptos.toArray().then((r) => r.find((c) => c.symbol === USDT_SYMBOL)?.quantity ?? 0), []) ?? 0
   const buyingUsdt = symbol.trim().toUpperCase() === USDT_SYMBOL
-  const buyTotal = (num(avgCost) || 0) * (num(qty) || 0)
+  const buyTotal = costMode === 'total' ? num(totalCost) || 0 : (num(avgCost) || 0) * (num(qty) || 0)
   const usdtShort = funding === 'usdt' && buyTotal > usdtAvail + 1e-9
 
   // Crypto quotes on FMP are keyed SYMBOLUSD (e.g. BTCUSD).
@@ -1253,7 +1353,7 @@ function CryptoForm({
               symbol: sym,
               name: nm,
               quantity: num(qty),
-              avgCost: num(avgCost),
+              avgCost: unitCost,
               accountId,
               price: manualPrice ?? row.price,
               priceUpdatedAt: manualPrice !== undefined && manualPrice !== row.price ? Date.now() : row.priceUpdatedAt,
@@ -1265,8 +1365,8 @@ function CryptoForm({
               symbol: sym,
               name: nm,
               quantity: num(qty),
-              cost: num(avgCost),
-              price: manualPrice ?? num(avgCost),
+              cost: unitCost,
+              price: manualPrice ?? unitCost,
               currency: 'USD',
               accountId,
               funding,
@@ -1293,9 +1393,17 @@ function CryptoForm({
         <Field label="Quantity">
           <input className="input num" type="number" step="any" min="0" required value={qty} onChange={(e) => setQty(e.target.value)} />
         </Field>
-        <Field label="Avg cost" hint="USD">
-          <input className="input num" type="number" step="any" min="0" required value={avgCost} onChange={(e) => setAvgCost(e.target.value)} />
-        </Field>
+        <CostField
+          mode={costMode}
+          onMode={setCostMode}
+          unitStr={avgCost}
+          onUnit={setAvgCost}
+          totalStr={totalCost}
+          onTotal={setTotalCost}
+          unitHint="USD"
+          currency="USD"
+          derived={costDerived}
+        />
         <Field label="Price" hint="USD, manual">
           <input className="input num" type="number" step="any" min="0" value={priceStr} onChange={(e) => setPriceStr(e.target.value)} />
         </Field>
